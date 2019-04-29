@@ -11,5 +11,5 @@ setup environment using conda
 	* conda install -c conda-forge rasterstats
 	
 * Add Data folder to root directory and get data from:
-* https://drive.google.com/open?id=1WMu_sAceVZv7BrovudtOG_whTaIjZUgT
+* https://drive.google.com/open?id=1Fzw3gOSvt_beX-uTU-Zid9sp8Ek4JuMv
 * unzip Data.7z into Data folder - contains shapefiles of hru by region
