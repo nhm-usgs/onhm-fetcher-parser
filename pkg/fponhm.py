@@ -10,7 +10,7 @@ import json
 from rasterstats import zonal_stats
 
 #from rasterio.transform import from_origin
-from .helper import np_get_wval, get_gm_url
+from helper import np_get_wval, get_gm_url
 import requests
 from requests.exceptions import HTTPError
 
