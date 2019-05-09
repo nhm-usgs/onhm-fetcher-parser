@@ -1,6 +1,5 @@
-from pkg import fponhm
-
-fp = fponhm.FpoNHM(2)
+from pkg import FpoNHM
+fp = FpoNHM(2)
 fp.initialize(r'../Data', r'../output')
 fp.run_weights()
 fp.finalize()
