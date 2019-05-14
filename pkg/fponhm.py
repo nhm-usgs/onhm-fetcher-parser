@@ -99,9 +99,11 @@ class FpoNHM:
         self.optpath = optpath
 
         os.chdir(self.iptpath)
+        print(os.getcwd())
         filenames = glob.glob('*.shp')
         self.gdf = pd.concat([gpd.read_file(f) for f in filenames]).pipe(gpd.GeoDataFrame)
         self.gdf.reset_index(drop=True, inplace=True)
+        print(filenames)
 
         self.num_hru = len(self.gdf.index)
         tmaxfile = None
