@@ -1,5 +1,11 @@
 from fponhm import FpoNHM
+print('starting Script')
 fp = FpoNHM(2)
+print('instantiated')
 fp.initialize(r'../Data', r'../output')
+print('initalized\n')
+print('running')
 fp.run_weights()
+print('finished running')
 fp.finalize()
+print('finalized')
