@@ -62,7 +62,7 @@ def get_gm_url(numdays, dataset, ctype='GridMetSS'):
     :return: URL for retrieving GridMet subset data and payload of options
     """
     dt1 = dt.timedelta(days=1) # because Gridmet data release today is yesterdays data
-    dt2 = dt.timedelta(days=numdays+1)
+    dt2 = dt.timedelta(days=numdays)
 
     sformat = "%Y-%m-%d"
 
@@ -70,6 +70,7 @@ def get_gm_url(numdays, dataset, ctype='GridMetSS'):
     start = dt.datetime.now() - dt2
     str_start = start.strftime(sformat) + "T00:00:00Z"
     str_end = end.strftime(sformat) + "T00:00:00Z"
+    str_start_cf = start.strftime(sformat) + " 00:00:00"
     dsvar = None
     url = None
     if ctype == 'GridMetSS':
@@ -96,4 +97,4 @@ def get_gm_url(numdays, dataset, ctype='GridMetSS'):
             'time_end': str_end,
             'timeStride': '1',
             'accept': 'netcdf4'}
-        return url, payload
+        return str_start_cf, url, payload

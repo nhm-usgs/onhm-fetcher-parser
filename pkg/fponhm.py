@@ -84,6 +84,9 @@ class FpoNHM:
         self.np_tmin = None
         self.np_ppt = None
 
+        #Starting date based in numdays
+        self.str_start = None
+
     def initialize(self, iptpath, optpath):
         """
         Initialize the fp_ohm class:
@@ -109,18 +112,18 @@ class FpoNHM:
         tmaxfile = None
         tminfile = None
         pptfile = None
-
+        str_start = None
         # Download netcdf subsetted data
         try:
-            tmxurl, tmxparams = get_gm_url(self.numdays, 'tmax')
+            self.str_start, tmxurl, tmxparams = get_gm_url(self.numdays, 'tmax')
             tmaxfile = requests.get(tmxurl, params=tmxparams)
             tmaxfile.raise_for_status()
 
-            tmnurl, tmnparams = get_gm_url(self.numdays, 'tmin')
+            self.str_start, tmnurl, tmnparams = get_gm_url(self.numdays, 'tmin')
             tminfile = requests.get(tmnurl, params=tmnparams)
             tminfile.raise_for_status()
 
-            ppturl, pptparams = get_gm_url(self.numdays, 'ppt')
+            self.str_start, ppturl, pptparams = get_gm_url(self.numdays, 'ppt')
             pptfile = requests.get(ppturl, params=pptparams)
             pptfile.raise_for_status()
 
@@ -241,36 +244,36 @@ class FpoNHM:
             print(dim)
 
         # Create Variables
-        time = ncfile.createVariable('time', np.int, ('time',))
+        time = ncfile.createVariable('time', 'i', ('time',))
         time.long_name = 'time'
         time.standard_name = 'time'
-        time.units = 'days since ' + 'base_date' + ' 00:00' + 'time_zone'
+        time.units = 'days since ' + self.str_start
 
-        hru = ncfile.createVariable('hruid', np.int, ('hruid',))
+        hru = ncfile.createVariable('hruid', 'i', ('hruid',))
         hru.cf_role = 'timeseries_id'
         hru.long_name = 'local model hru id'
 
-        lat = ncfile.createVariable('hru_lat', np.float32, ('hruid',))
+        lat = ncfile.createVariable('hru_lat', np.dtype(np.float32).char, ('hruid',))
         lat.long_name = 'Latitude of HRU centroid'
         lat.units = 'degrees_north'
         lat.standard_name = 'hru_latitude'
 
-        lon = ncfile.createVariable('hru_lon', np.float32, ('hruid',))
+        lon = ncfile.createVariable('hru_lon', np.dtype(np.float32).char, ('hruid',))
         lon.long_name = 'Longitude of HRU centroid'
         lon.units = 'degrees_east'
         lon.standard_name = 'hru_longitude'
 
-        prcp = ncfile.createVariable('prcp', np.float32, ('time', 'hruid'))
+        prcp = ncfile.createVariable('prcp', np.dtype(np.float32).char, ('time', 'hruid'))
         prcp.long_name = 'Daily precipitation rate'
         prcp.units = 'mm/day'
         prcp.standard_name = 'lwe_precipitation_rate'
 
-        tmax = ncfile.createVariable('tmax', np.float32, ('time', 'hruid'))
+        tmax = ncfile.createVariable('tmax', np.dtype(np.float32).char, ('time', 'hruid'))
         tmax.long_name = 'Maximum daily air temperature'
         tmax.units = 'degree_Celsius'
         tmax.standard_name = 'maximum_daily_air_temperature'
 
-        tmin = ncfile.createVariable('tmin', np.float32, ('time', 'hruid'))
+        tmin = ncfile.createVariable('tmin', np.dtype(np.float32).char, ('time', 'hruid'))
         tmin.long_name = 'Minimum daily air temperature'
         tmin.units = 'degree_Celsius'
         tmin.standard_name = 'minimum_daily_air_temperature'
@@ -282,6 +285,7 @@ class FpoNHM:
         centroidseries = self.gdf['geometry'].centroid
         tlon, tlat = [list(t) for t in zip(*map(getxy, centroidseries))]
         # print(lon, lat)
+        time[:] = np.arange(0, self.numdays)
         lon[:] = tlon
         lat[:] = tlat
         hru[:] = self.gdf['hru_id_nat'].values
