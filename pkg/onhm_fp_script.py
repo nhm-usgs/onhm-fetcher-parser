@@ -2,7 +2,7 @@ from fponhm import FpoNHM
 print('starting Script')
 fp = FpoNHM(2)
 print('instantiated')
-fp.initialize(r'../Data', r'../output')
+fp.initialize(r'../Data', r'../Output')
 print('initalized\n')
 print('running')
 fp.run_weights()
