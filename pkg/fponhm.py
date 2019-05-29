@@ -178,6 +178,11 @@ class FpoNHM:
         self.lonshape = ts['lon']
         self.latshape = ts['lat']
 
+        if self.dayshape == self.numdays:
+            return True
+        else:
+            return False
+
 
     def run_weights(self):
 
@@ -303,3 +308,6 @@ class FpoNHM:
 
         ncfile.close()
         print("dataset is closed")
+
+    def setNumdays(self, num_d):
+        self.numdays = num_d

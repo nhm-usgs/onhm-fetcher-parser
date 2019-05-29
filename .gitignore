@@ -1,1 +1,4 @@
 Data/*.nc
+Output/*.nc
+pkg/__pycache__
+notebooks/.ipynb_checkpoints/
