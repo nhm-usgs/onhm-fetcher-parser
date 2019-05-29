@@ -230,6 +230,8 @@ class FpoNHM:
         tmp = 0
 
     def finalize(self):
+        os.chdir(self.optpath)
+        print(os.getcwd())
         ncfile = netCDF4.Dataset('new.nc', mode='w', format='NETCDF4_CLASSIC')
 
         # Global Attributes
