@@ -1,5 +1,6 @@
 from fponhm import FpoNHM
 import sys, getopt
+import argparse
 
 def main():
     numdays = None
@@ -9,7 +10,10 @@ def main():
 
     except getopt.GetoptError as err:
         print(err)
-        print('test.py -d <inputfile> -o <outputfile>')
+        print("onhm_fp_script.py -d <numdays>")
+        sys.exit(2)
+    if opts == []:
+        print("missing option - Usage: onhm_fp_script.py -d <numdays>")
         sys.exit(2)
     for opt, arg in opts:
         if opt == "-h":
