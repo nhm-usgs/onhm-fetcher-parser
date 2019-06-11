@@ -19,11 +19,13 @@ def main():
         sys.exit(2)
     for opt, arg in opts:
         if opt == "-h":
-            print("onhm_fp_script.py -d <numdays>")
+            print("onhm_fp_script.py -d <numdays> -i <input_dir>, -o <output_dir>")
         elif opt in ("-d"):
             numdays = int(arg)
-
-
+        elif opt in ('-i'):
+            idir = art
+        elif opt in ('-o')
+            odir = arg
     print("numdays = ", numdays)
 
 
@@ -32,7 +34,7 @@ def main():
     #numdays = 2
     fp = FpoNHM(numdays)
     print('instantiated')
-    ready = fp.initialize(r'../Data', r'../Output')
+    ready = fp.initialize(idir, odir)
     if ready:
         print('initalized\n')
         print('running')
