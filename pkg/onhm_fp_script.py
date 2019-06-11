@@ -4,6 +4,8 @@ import argparse
 
 def main():
     numdays = None
+    idir = None
+    odir = None
     print(sys.argv[0:])
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hd:", ["help"])
@@ -20,6 +22,8 @@ def main():
             print("onhm_fp_script.py -d <numdays>")
         elif opt in ("-d"):
             numdays = int(arg)
+
+
     print("numdays = ", numdays)
 
 
@@ -45,5 +49,6 @@ def main():
         print('finished running')
         fp.finalize()
         print('finalized')
+
 if __name__ == "__main__":
     main()

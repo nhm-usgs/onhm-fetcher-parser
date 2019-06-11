@@ -3,16 +3,17 @@ import pandas as pd
 import netCDF4
 import numpy as np
 import glob
-#import rasterio
+# import rasterio
 import os
 import xarray as xr
 import json
 from rasterstats import zonal_stats
 
-#from rasterio.transform import from_origin
+# from rasterio.transform import from_origin
 from helper import np_get_wval, get_gm_url
 import requests
 from requests.exceptions import HTTPError
+from datetime import datetime as datetime
 
 
 class FpoNHM:
@@ -28,7 +29,6 @@ class FpoNHM:
             2) rasterstats - zonal averaging
 
     """
-
     def __init__(self, numdays, climsource='GridMetSS'):
         """
         Initialize class
@@ -84,7 +84,7 @@ class FpoNHM:
         self.np_tmin = None
         self.np_ppt = None
 
-        #Starting date based in numdays
+        # Starting date based on numdays
         self.str_start = None
 
     def initialize(self, iptpath, optpath):
@@ -128,30 +128,31 @@ class FpoNHM:
             pptfile.raise_for_status()
 
         except HTTPError as http_err:
-            print(f'HTTP error occured: {http_err}')
+            print('HTTP error occured: {http_err}')
         except Exception as err:
-            print(f'Other error occured: {err}')
+            print('Other error occured: {err}')
         else:
             print('Success!')
 
-        # write downloaded data to local netcdf files
-        ncfile = ('tmax.nc', 'tmin.nc', 'ppt.nc')
-        for tfile in ncfile:
+        # write downloaded data to local netcdf files and open as xarray
+        ncfile = ('tmax_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
+                  'tmin_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
+                  'ppt_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc')
+        for index, tfile in enumerate(ncfile):
             with open(tfile, 'wb') as fh:
-                if tfile == 'tmax.nc':
+                if index == 0:
                     fh.write(tmaxfile.content)
-                if tfile == 'tmin.nc':
+                elif index == 1:
                     fh.write(tminfile.content)
-                if tfile == 'ppt.nc':
+                elif index == 2:
                     fh.write(pptfile.content)
             fh.close()
-
-        # Get climate data
-        self.dstmax = xr.open_dataset('tmax.nc')
-        self.dstmin = xr.open_dataset('tmin.nc')
-        self.dsppt = xr.open_dataset('ppt.nc')
-
-        # Get  to climate data
+            if index == 0:
+                self.dstmax = xr.open_dataset(tfile)
+            elif index == 1:
+                self.dstmin = xr.open_dataset(tfile)
+            elif index == 2:
+                self.dsppt = xr.open_dataset(tfile)
 
         # =========================================================
         # Get handles to shape/Lat/Lon/DataArray
@@ -164,7 +165,7 @@ class FpoNHM:
         self.lat_h = self.dstmax['lat']
         self.lon_h = self.dstmax['lon']
         self.time_h = self.dstmax['day']
-        #self.crs_h = self.dstmax['crs']
+        # self.crs_h = self.dstmax['crs']
 
         if self.climsource == 'GridMetSS':
             self.tmax_h = self.dstmax[self.gmss_vars['tmax']]
@@ -183,7 +184,6 @@ class FpoNHM:
         else:
             return False
 
-
     def run_weights(self):
 
         # =========================================================
@@ -195,9 +195,9 @@ class FpoNHM:
         print('finished reading weight file')
 
         # intialize numpy arrays to store climate vars
-        self.np_tmax = np.zeros((self.numdays,self.num_hru))
-        self.np_tmin = np.zeros((self.numdays,self.num_hru))
-        self.np_ppt = np.zeros((self.numdays,self.num_hru))
+        self.np_tmax = np.zeros((self.numdays, self.num_hru))
+        self.np_tmin = np.zeros((self.numdays, self.num_hru))
+        self.np_ppt = np.zeros((self.numdays, self.num_hru))
 
         for day in np.arange(self.numdays):
             print(day)
@@ -210,8 +210,6 @@ class FpoNHM:
             tmax_h_flt = np.nan_to_num(self.tmax_h.values[day, :, :].flatten(order='K'))
             tmin_h_flt = np.nan_to_num(self.tmin_h.values[day, :, :].flatten(order='K'))
             tppt_h_flt = np.nan_to_num(self.tppt_h.values[day, :, :].flatten(order='K'))
-
-
 
             for index, row in self.gdf.iterrows():
                 # weight_id_rows = wght_df_40.loc[wght_df_40['hru_id_nat'] == row['hru_id_nat']]
@@ -237,7 +235,8 @@ class FpoNHM:
     def finalize(self):
         os.chdir(self.optpath)
         print(os.getcwd())
-        ncfile = netCDF4.Dataset('new.nc', mode='w', format='NETCDF4_CLASSIC')
+        ncfile = netCDF4.Dataset('climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
+                                 mode='w', format='NETCDF4_CLASSIC')
 
         # Global Attributes
         ncfile.Conventions = 'CF-1.8'
@@ -304,7 +303,6 @@ class FpoNHM:
         tmax[:, :] = self.np_tmax[:, :]
         tmin[:, :] = self.np_tmin[:, :]
         prcp[:, :] = self.np_ppt[:, :]
-
 
         ncfile.close()
         print("dataset is closed")
