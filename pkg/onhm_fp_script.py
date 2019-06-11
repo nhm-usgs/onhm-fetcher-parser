@@ -23,8 +23,8 @@ def main():
         elif opt in ("-d"):
             numdays = int(arg)
         elif opt in ('-i'):
-            idir = art
-        elif opt in ('-o')
+            idir = arg
+        elif opt in ('-o'):
             odir = arg
     print("numdays = ", numdays)
 
