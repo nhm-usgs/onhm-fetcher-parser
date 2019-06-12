@@ -107,6 +107,7 @@ class FpoNHM:
         self.gdf = pd.concat([gpd.read_file(f) for f in filenames]).pipe(gpd.GeoDataFrame)
         self.gdf.reset_index(drop=True, inplace=True)
         print(filenames)
+        print(self.gdf.head())
 
         self.num_hru = len(self.gdf.index)
         tmaxfile = None
@@ -245,6 +246,7 @@ class FpoNHM:
         ncfile.history = ''
 
         sp_dim = len(self.gdf.index)
+
         hruid_dim = ncfile.createDimension('hruid', sp_dim)  # hru_id
         time_dim = ncfile.createDimension('time', self.numdays)  # unlimited axis (can be appended to).
         for dim in ncfile.dimensions.items():
@@ -289,7 +291,7 @@ class FpoNHM:
         def getxy(pt):
             return pt.x, pt.y
 
-        centroidseries = self.gdf['geometry'].centroid
+        centroidseries = self.gdf.geometry.centroid
         tlon, tlat = [list(t) for t in zip(*map(getxy, centroidseries))]
         # print(lon, lat)
         time[:] = np.arange(0, self.numdays)
