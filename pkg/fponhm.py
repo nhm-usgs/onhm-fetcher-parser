@@ -100,7 +100,7 @@ class FpoNHM:
         """
         self.iptpath = iptpath
         self.optpath = optpath
-
+        print(os.getcwd())
         os.chdir(self.iptpath)
         print(os.getcwd())
         filenames = glob.glob('*.shp')

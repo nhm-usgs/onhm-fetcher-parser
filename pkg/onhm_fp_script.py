@@ -1,5 +1,6 @@
 from fponhm import FpoNHM
 import sys, getopt
+from pathlib import Path
 import argparse
 
 def main():
@@ -8,7 +9,7 @@ def main():
     odir = None
     print(sys.argv[0:])
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hd:", ["help"])
+        opts, args = getopt.getopt(sys.argv[1:], "hd:i:o:", ["help"])
 
     except getopt.GetoptError as err:
         print(err)
@@ -23,9 +24,9 @@ def main():
         elif opt in ("-d"):
             numdays = int(arg)
         elif opt in ('-i'):
-            idir = arg
+            idir = Path(arg)
         elif opt in ('-o'):
-            odir = arg
+            odir = Path(arg)
     print("numdays = ", numdays)
 
 
