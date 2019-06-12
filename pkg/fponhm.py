@@ -233,6 +233,7 @@ class FpoNHM:
         tmp = 0
 
     def finalize(self):
+        print(os.getcwd())
         os.chdir(self.optpath)
         print(os.getcwd())
         ncfile = netCDF4.Dataset('climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
