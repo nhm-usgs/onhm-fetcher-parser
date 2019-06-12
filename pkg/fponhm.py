@@ -14,7 +14,7 @@ from helper import np_get_wval, get_gm_url
 import requests
 from requests.exceptions import HTTPError
 from datetime import datetime as datetime
-
+from pathlib import Path
 
 class FpoNHM:
     """ Class for fetching climate data and parsing into netcdf
@@ -190,7 +190,7 @@ class FpoNHM:
         #       Read hru weights
         # =========================================================
 
-        wght_uofi = pd.read_csv('../Data/hru_uofimetdata_weights.csv')
+        wght_uofi = pd.read_csv(self.iptpath / Path('hru_uofimetdata_weights.csv'))
         self.unique_hru_ids = wght_uofi.groupby('hru_id_nat')
         print('finished reading weight file')
 
