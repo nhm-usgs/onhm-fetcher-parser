@@ -5,6 +5,7 @@ import numpy as np
 import glob
 # import rasterio
 import os
+import sys
 import xarray as xr
 import json
 from rasterstats import zonal_stats
@@ -130,6 +131,10 @@ class FpoNHM:
 
         except HTTPError as http_err:
             print('HTTP error occured: {http_err}')
+            if self.numdays == 1:
+                sys.exit("numdays == 1: Gridmet not updated")
+            else:
+                sys.exit("GridMet not available or a bad request")
         except Exception as err:
             print('Other error occured: {err}')
         else:
