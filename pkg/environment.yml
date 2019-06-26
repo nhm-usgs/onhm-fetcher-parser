@@ -1,0 +1,20 @@
+name: gridmet_4
+channels:
+- defaults
+- conda-forge
+dependencies:
+- python=3.6
+- matplotlib
+- numpy
+- pandas
+- xarray
+- dask
+- bottleneck
+- jupyter
+- notebook=5.7.4
+- cartopy
+- scipy
+- rasterio
+- rasterstats
+- geopandas
+- netcdf4
