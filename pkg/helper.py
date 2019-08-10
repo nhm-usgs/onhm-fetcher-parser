@@ -96,5 +96,5 @@ def get_gm_url(numdays, dataset, ctype='GridMetSS'):
             'time_start': str_start,
             'time_end': str_end,
             'timeStride': '1',
-            'accept': 'netcdf4'}
+            'accept': 'netcdf'}
         return str_start_cf, url, payload
