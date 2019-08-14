@@ -1,4 +1,6 @@
 Data
 Output/*.nc
+Output/*.txt
 pkg/__pycache__
 notebooks/.ipynb_checkpoints/
+.idea
