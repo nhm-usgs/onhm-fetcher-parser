@@ -30,7 +30,7 @@ class FpoNHM:
             2) rasterstats - zonal averaging
 
     """
-    def __init__(self, numdays, climsource='GridMetSS'):
+    def __init__(self, climsource='GridMetSS'):
         """
         Initialize class
 
@@ -45,7 +45,15 @@ class FpoNHM:
                 'tmax': 'daily_maximum_temperature',
                 'tmin': 'daily_minimum_temperature',
                 'ppt': 'precipitation_amount'}
-        self.numdays = numdays
+        # type of retrieval (days) retrieve by previous number of days - used in operational mode
+        # or (date) used to retrieve specific period of time
+        self.type = None
+
+        self.numdays = None
+
+        #prefix for file names - default is ''.
+        self.fileprefix = None
+
         # xarray containers for tempurature max, temperature min and precipitation
         self.dstmax = None
         self.dstmin = None
@@ -57,6 +65,13 @@ class FpoNHM:
         # input and output path directories
         self.iptpath = None
         self.optpath = None
+
+        # weights file
+        self.wghts_file = None
+
+        # start and end dates of using type == date
+        self.start_date = None
+        self.end_date = None
 
         # handles to netcdf climate data
         # Coordinates
@@ -85,10 +100,14 @@ class FpoNHM:
         self.np_tmin = None
         self.np_ppt = None
 
+        # logical use_date
+        self.use_date = False
+
         # Starting date based on numdays
         self.str_start = None
 
-    def initialize(self, iptpath, optpath):
+    def initialize(self, iptpath, optpath, weights_file, type=None, days=None,
+                   start_date=None, end_date=None, fileprefix=''):
         """
         Initialize the fp_ohm class:
             1) initialize geopandas dataframe of concatenated hru_shapefiles
@@ -101,6 +120,12 @@ class FpoNHM:
         """
         self.iptpath = iptpath
         self.optpath = optpath
+        self.wghts_file = weights_file
+        self.type = type
+        self.numdays = days
+        self.start_date = start_date
+        self.end_date = end_date
+        self.fileprefix = fileprefix
         print(os.getcwd())
         os.chdir(self.iptpath)
         print(os.getcwd())
@@ -115,17 +140,23 @@ class FpoNHM:
         tminfile = None
         pptfile = None
         str_start = None
+        if self.type == 'date':
+            self.numdays = ((self.end_date - self.start_date).days + 1)
         # Download netcdf subsetted data
+        #get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype='GridMetSS'):
         try:
-            self.str_start, tmxurl, tmxparams = get_gm_url(self.numdays, 'tmax')
+            self.str_start, tmxurl, tmxparams = get_gm_url(self.type, 'tmax', self.numdays,
+                                                           self.start_date, self.end_date)
             tmaxfile = requests.get(tmxurl, params=tmxparams)
             tmaxfile.raise_for_status()
 
-            self.str_start, tmnurl, tmnparams = get_gm_url(self.numdays, 'tmin')
+            self.str_start, tmnurl, tmnparams = get_gm_url(self.type, 'tmin', self.numdays,
+                                                           self.start_date, self.end_date)
             tminfile = requests.get(tmnurl, params=tmnparams)
             tminfile.raise_for_status()
 
-            self.str_start, ppturl, pptparams = get_gm_url(self.numdays, 'ppt')
+            self.str_start, ppturl, pptparams = get_gm_url(self.type, 'ppt', self.numdays,
+                                                           self.start_date, self.end_date)
             pptfile = requests.get(ppturl, params=pptparams)
             pptfile.raise_for_status()
 
@@ -141,9 +172,9 @@ class FpoNHM:
             print('Success!')
 
         # write downloaded data to local netcdf files and open as xarray
-        ncfile = ('tmax_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
-                  'tmin_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
-                  'ppt_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc')
+        ncfile = (self.fileprefix + 'tmax_' + (datetime.now().strftime('%Y_%m_%d')) + '.nc',
+                  self.fileprefix + 'tmin_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
+                  self.fileprefix + 'ppt_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc')
         for index, tfile in enumerate(ncfile):
             with open(tfile, 'wb') as fh:
                 if index == 0:
@@ -185,10 +216,17 @@ class FpoNHM:
         self.lonshape = ts['lon']
         self.latshape = ts['lat']
 
+        # if self.type == 'days':
         if self.dayshape == self.numdays:
             return True
         else:
             return False
+        # else:
+        #     if self.dayshape == self.numdays:
+        #         return True
+        #     else:
+        #         return False
+
 
     def run_weights(self):
 
@@ -196,7 +234,7 @@ class FpoNHM:
         #       Read hru weights
         # =========================================================
 
-        wght_uofi = pd.read_csv(self.iptpath / Path('hru_uofimetdata_weights.csv'))
+        wght_uofi = pd.read_csv(self.iptpath / Path(self.wghts_file))
         self.unique_hru_ids = wght_uofi.groupby('hru_id_nat')
         print('finished reading weight file')
 
@@ -242,7 +280,7 @@ class FpoNHM:
         print(os.getcwd())
         os.chdir(self.optpath)
         print(os.getcwd())
-        ncfile = netCDF4.Dataset('climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
+        ncfile = netCDF4.Dataset(self.fileprefix + 'climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
                                  mode='w', format='NETCDF4_CLASSIC')
 
         # Global Attributes

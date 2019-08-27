@@ -48,7 +48,7 @@ def np_get_wval(ndata, wghts):
     return np.ma.average(mdata, weights=wghts['w'])
 
 
-def get_gm_url(numdays, dataset, ctype='GridMetSS'):
+def get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype='GridMetSS'):
     """
     This helper function returns a url and payload to be used with requests
     to get climate data.  Returned values can be used in a request for example:
@@ -61,16 +61,21 @@ def get_gm_url(numdays, dataset, ctype='GridMetSS'):
         'GridMet':
     :return: URL for retrieving GridMet subset data and payload of options
     """
-    dt1 = dt.timedelta(days=1) # because Gridmet data release today is yesterdays data
-    dt2 = dt.timedelta(days=numdays)
-
     sformat = "%Y-%m-%d"
+    if type == 'days':
+        dt1 = dt.timedelta(days=1) # because Gridmet data release today is yesterdays data
+        dt2 = dt.timedelta(days=numdays)
 
-    end = dt.datetime.now() - dt1
-    start = dt.datetime.now() - dt2
-    str_start = start.strftime(sformat) + "T00:00:00Z"
-    str_end = end.strftime(sformat) + "T00:00:00Z"
-    str_start_cf = start.strftime(sformat) + " 00:00:00"
+        end = dt.datetime.now() - dt1
+        start = dt.datetime.now() - dt2
+        str_start = start.strftime(sformat) + "T00:00:00Z"
+        str_end = end.strftime(sformat) + "T00:00:00Z"
+        str_start_cf = start.strftime(sformat) + " 00:00:00"
+    elif type == 'date':
+        str_start = startdate.strftime(sformat) + "T00:00:00Z"
+        str_end = enddate.strftime(sformat) + "T00:00:00Z"
+        str_start_cf = startdate.strftime(sformat) + " 00:00:00"
+
     dsvar = None
     url = None
     if ctype == 'GridMetSS':
