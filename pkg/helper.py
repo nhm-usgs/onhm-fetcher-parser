@@ -43,8 +43,10 @@ def np_get_wval(ndata, wghts):
     :return: numpy weighted averaged - masked to deal with nans associated with
             ndata that is outside of the conus.
     """
-    mdata = np.ma.masked_array(ndata[wghts['grid_ids'].values.astype(int)],
-                               np.isnan(ndata[wghts['grid_ids'].values.astype(int)]))
+    # mdata = np.ma.masked_array(ndata[wghts['grid_ids'].values.astype(int)],
+    #                            np.isnan(ndata[wghts['grid_ids'].values.astype(int)]))
+    mdata = np.ma.masked_where(ndata[wghts['grid_ids'].values.astype(int)] <= 0.0,
+                               (ndata[wghts['grid_ids'].values.astype(int)]))
     return np.ma.average(mdata, weights=wghts['w'])
 
 
