@@ -2,6 +2,7 @@ import rasterio
 from rasterio.transform import from_origin
 import numpy as np
 import datetime as dt
+from numpy.ma import masked
 
 
 def gridmet_nc_to_geotiff(ds, time_index, path, filename, dsname):
@@ -35,7 +36,7 @@ def gridmet_nc_to_geotiff(ds, time_index, path, filename, dsname):
     new_dataset.close()
 
 
-def np_get_wval(ndata, wghts):
+def np_get_wval(ndata, wghts, hru_id):
     """
     Returns weighted average of ndata with weights = grp
     :param ndata: float array of data values
@@ -45,10 +46,19 @@ def np_get_wval(ndata, wghts):
     """
     mdata = np.ma.masked_array(ndata[wghts['grid_ids'].values.astype(int)],
                                np.isnan(ndata[wghts['grid_ids'].values.astype(int)]))
-    return np.ma.average(mdata, weights=wghts['w'])
+
+    # mdata = np.ma.masked_where(ndata[wghts['grid_ids'].values.astype(int)] <= 0.0,
+    #                            (ndata[wghts['grid_ids'].values.astype(int)]))
+    tmp = np.ma.average(mdata, weights=wghts['w'])
+    if tmp is masked:
+        print('returning masked value', hru_id, mdata, wghts['w'])
+        return 0.0
+
+    else:
+        return tmp
 
 
-def get_gm_url(numdays, dataset, ctype='GridMetSS'):
+def get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype='GridMetSS'):
     """
     This helper function returns a url and payload to be used with requests
     to get climate data.  Returned values can be used in a request for example:
@@ -61,19 +71,24 @@ def get_gm_url(numdays, dataset, ctype='GridMetSS'):
         'GridMet':
     :return: URL for retrieving GridMet subset data and payload of options
     """
-    dt1 = dt.timedelta(days=1) # because Gridmet data release today is yesterdays data
-    dt2 = dt.timedelta(days=numdays)
-
     sformat = "%Y-%m-%d"
+    if type == 'days':
+        dt1 = dt.timedelta(days=1) # because Gridmet data release today is yesterdays data
+        dt2 = dt.timedelta(days=numdays)
 
-    end = dt.datetime.now() - dt1
-    start = dt.datetime.now() - dt2
-    str_start = start.strftime(sformat) + "T00:00:00Z"
-    str_end = end.strftime(sformat) + "T00:00:00Z"
-    str_start_cf = start.strftime(sformat) + " 00:00:00"
+        end = dt.datetime.now() - dt1
+        start = dt.datetime.now() - dt2
+        str_start = start.strftime(sformat) + "T00:00:00Z"
+        str_end = end.strftime(sformat) + "T00:00:00Z"
+        str_start_cf = start.strftime(sformat) + " 00:00:00"
+    elif type == 'date':
+        str_start = startdate.strftime(sformat) + "T00:00:00Z"
+        str_end = enddate.strftime(sformat) + "T00:00:00Z"
+        str_start_cf = startdate.strftime(sformat) + " 00:00:00"
+
     dsvar = None
     url = None
-    if ctype == 'GridMetSS':
+    if ctype == 'GridMetSS': #extract data using NetcdfSubset service
         if dataset == 'tmax':
             dsvar = 'daily_maximum_temperature'
             url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/agg_met_tmmx_1979_CurrentYear_CONUS.nc'
@@ -83,7 +98,15 @@ def get_gm_url(numdays, dataset, ctype='GridMetSS'):
         elif dataset == 'ppt':
             dsvar = 'precipitation_amount'
             url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/agg_met_pr_1979_CurrentYear_CONUS.nc'
-
+        elif dataset == 'rhmax':
+            dsvar = 'daily_maximum_relative_humidity'
+            url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_rmax_1979_CurrentYear_CONUS.nc'
+        elif dataset == 'rhmin':
+            dsvar = 'daily_minimum_relative_humidity'
+            url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_rmin_1979_CurrentYear_CONUS.nc'
+        elif dataset == 'ws':
+            dsvar = 'daily_mean_wind_speed'
+            url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_vs_1979_CurrentYear_CONUS.nc'
         payload = {
             'var': dsvar,
             'north': '49.4000',

@@ -1,4 +1,5 @@
 Data
+Output/
 Output/*.nc
 Output/*.txt
 pkg/__pycache__
