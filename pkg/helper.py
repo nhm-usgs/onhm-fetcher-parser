@@ -2,6 +2,7 @@ import rasterio
 from rasterio.transform import from_origin
 import numpy as np
 import datetime as dt
+from numpy.ma import masked
 
 
 def gridmet_nc_to_geotiff(ds, time_index, path, filename, dsname):
@@ -35,7 +36,7 @@ def gridmet_nc_to_geotiff(ds, time_index, path, filename, dsname):
     new_dataset.close()
 
 
-def np_get_wval(ndata, wghts):
+def np_get_wval(ndata, wghts, hru_id):
     """
     Returns weighted average of ndata with weights = grp
     :param ndata: float array of data values
@@ -43,12 +44,18 @@ def np_get_wval(ndata, wghts):
     :return: numpy weighted averaged - masked to deal with nans associated with
             ndata that is outside of the conus.
     """
-    # mdata = np.ma.masked_array(ndata[wghts['grid_ids'].values.astype(int)],
-    #                            np.isnan(ndata[wghts['grid_ids'].values.astype(int)]))
+    mdata = np.ma.masked_array(ndata[wghts['grid_ids'].values.astype(int)],
+                               np.isnan(ndata[wghts['grid_ids'].values.astype(int)]))
 
-    mdata = np.ma.masked_where(ndata[wghts['grid_ids'].values.astype(int)] <= 0.0,
-                               (ndata[wghts['grid_ids'].values.astype(int)]))
-    return np.ma.average(mdata, weights=wghts['w'])
+    # mdata = np.ma.masked_where(ndata[wghts['grid_ids'].values.astype(int)] <= 0.0,
+    #                            (ndata[wghts['grid_ids'].values.astype(int)]))
+    tmp = np.ma.average(mdata, weights=wghts['w'])
+    if tmp is masked:
+        print('returning masked value', hru_id, mdata, wghts['w'])
+        return 0.0
+
+    else:
+        return tmp
 
 
 def get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype='GridMetSS'):
@@ -81,7 +88,7 @@ def get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype
 
     dsvar = None
     url = None
-    if ctype == 'GridMetSS':
+    if ctype == 'GridMetSS': #extract data using NetcdfSubset service
         if dataset == 'tmax':
             dsvar = 'daily_maximum_temperature'
             url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/agg_met_tmmx_1979_CurrentYear_CONUS.nc'
@@ -91,7 +98,15 @@ def get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype
         elif dataset == 'ppt':
             dsvar = 'precipitation_amount'
             url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/agg_met_pr_1979_CurrentYear_CONUS.nc'
-
+        elif dataset == 'rhmax':
+            dsvar = 'daily_maximum_relative_humidity'
+            url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_rmax_1979_CurrentYear_CONUS.nc'
+        elif dataset == 'rhmin':
+            dsvar = 'daily_minimum_relative_humidity'
+            url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_rmin_1979_CurrentYear_CONUS.nc'
+        elif dataset == 'ws':
+            dsvar = 'daily_mean_wind_speed'
+            url = 'http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_vs_1979_CurrentYear_CONUS.nc'
         payload = {
             'var': dsvar,
             'north': '49.4000',
