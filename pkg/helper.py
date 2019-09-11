@@ -52,7 +52,7 @@ def np_get_wval(ndata, wghts, hru_id):
     tmp = np.ma.average(mdata, weights=wghts['w'])
     if tmp is masked:
         print('returning masked value', hru_id, mdata, wghts['w'])
-        return 0.0
+        return np.nan
 
     else:
         return tmp

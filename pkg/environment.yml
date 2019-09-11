@@ -1,4 +1,4 @@
-name: gridmet_4
+name: ofp_env
 channels:
 - defaults
 - conda-forge

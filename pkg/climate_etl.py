@@ -103,7 +103,10 @@ def main():
     fp = FpoNHM()
     print('instantiated')
     #initialize(self, iptpath, optpath, weights_file, type=None, days=None, start_date=None, end_date=None)
-    ready = fp.initialize(idir, odir, wght_file, extract_type, numdays, startdate, enddate, file_prefix)
+    # ready = fp.initialize(idir, odir, wght_file, extract_type, numdays, startdate, enddate, file_prefix)
+    ready = fp.initialize(idir, odir, wght_file, type=extract_type, days=numdays,
+                          start_date=startdate, end_date=enddate,
+                          fileprefix=file_prefix)
     if ready:
         print('initalized\n')
         print('running')
