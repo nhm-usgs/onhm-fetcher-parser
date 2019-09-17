@@ -13,4 +13,5 @@ setup environment using conda
 * unzip Data_hru_shp_v2.tar.gz into Data folder - contains shapefiles of hru by region
 
 To run onhm-fetcher-parser from a conda cmd prompt using the ofp_env environment 
-python pkg/climate_etl.py -t date -p 2015-01-01 2015-12-31 -f 2015_ -i Data -o Output -w Data/weights.csv
+
+	* python pkg/climate_etl.py -t date -p 2015-01-01 2015-12-31 -f 2015_ -i Data -o Output -w Data/weights.csv
