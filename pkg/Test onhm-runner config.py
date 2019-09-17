@@ -20,7 +20,7 @@ str_end_pull_date = end_pull_date.strftime(sformat)
 #     subprocess.call(ofp_docker_cmd, stdout=output, stderr=output)
 # Code below call fetch-parser thorough; assumes hru*.shp are in INDIR; will output to OUTDIR
 INDIR = '../Data/'
-OUTDIR = '../Ouput/'
+OUTDIR = '../Output/'
 print('starting Script')
 # numdays = 2
 fp = FpoNHM()

@@ -141,6 +141,7 @@ class FpoNHM:
         print(os.getcwd())
         os.chdir(self.iptpath)
         print(os.getcwd())
+        # glob.glob produces different results on Win and Linux. Adding sorted makes result consistent
         filenames = sorted(glob.glob('*.shp'))
         self.gdf = pd.concat([gpd.read_file(f) for f in filenames], sort=True).pipe(gpd.GeoDataFrame)
         self.gdf.reset_index(drop=True, inplace=True)
