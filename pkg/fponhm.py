@@ -141,6 +141,7 @@ class FpoNHM:
         print(os.getcwd())
         os.chdir(self.iptpath)
         print(os.getcwd())
+        print(f'start_date: {self.start_date} and end_date: {self.end_date}')
         # glob.glob produces different results on Win and Linux. Adding sorted makes result consistent
         filenames = sorted(glob.glob('*.shp'))
         self.gdf = pd.concat([gpd.read_file(f) for f in filenames], sort=True).pipe(gpd.GeoDataFrame)
@@ -269,9 +270,11 @@ class FpoNHM:
         self.latshape = ts['lat']
 
         # if self.type == 'days':
+        print(f'Gridmet returned days = {self.dayshape} and expected number of days {self.numdays}')
         if self.dayshape == self.numdays:
             return True
         else:
+            print('returned and expected days not equal')
             return False
         # else:
         #     if self.dayshape == self.numdays:
