@@ -14,7 +14,7 @@ def getxml(url):
     return data
 
 
-# tmaxurl =  "http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_tmmx_1979_CurrentYear_CONUS.nc/dataset.xml"
+# "http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_tmmx_1979_CurrentYear_CONUS.nc/dataset.xml"
 # http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_tmmn_1979_CurrentYear_CONUS.nc/dataset.xml
 # http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_pr_1979_CurrentYear_CONUS.nc/dataset.xml
 # http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_rmin_1979_CurrentYear_CONUS.nc/dataset.xml
@@ -38,13 +38,3 @@ for data in data_packets:
     if gm_date != yesterday:
         print(f'Gridmet data {data} is not available - process exiting')
         sys.exit(1)
-
-def getxml(url):
-    http = urllib3.PoolManager()
-
-    response = http.request('GET', url)
-    try:
-        data = xmltodict.parse(response.data)
-    except:
-        print("Failed to parse xml from response (%s)" % traceback.format_exc())
-    return data
