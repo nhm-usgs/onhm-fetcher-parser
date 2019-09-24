@@ -19,3 +19,4 @@ dependencies:
 - geopandas
 - netcdf4
 - docker-py
+- xmltodict

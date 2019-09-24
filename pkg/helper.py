@@ -3,6 +3,7 @@ from rasterio.transform import from_origin
 import numpy as np
 import datetime as dt
 from numpy.ma import masked
+import traceback
 
 
 def gridmet_nc_to_geotiff(ds, time_index, path, filename, dsname):
@@ -121,3 +122,18 @@ def get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype
             'timeStride': '1',
             'accept': 'netcdf'}
         return str_start_cf, url, payload
+
+def getxml():
+    url = "http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_tmmx_1979_CurrentYear_CONUS.nc/dataset.xml"
+    import urllib3
+    import xmltodict
+
+
+    http = urllib3.PoolManager()
+
+    response = http.request('GET', url)
+    try:
+        data = xmltodict.parse(response.data)
+    except:
+        print("Failed to parse xml from response (%s)" % traceback.format_exc())
+    return data

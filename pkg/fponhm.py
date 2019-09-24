@@ -11,10 +11,10 @@ import xarray as xr
 #from rasterstats import zonal_stats
 
 # from rasterio.transform import from_origin
-from helper import np_get_wval, get_gm_url
+from helper import np_get_wval, get_gm_url, getxml
 import requests
 from requests.exceptions import HTTPError
-from datetime import datetime as datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 class FpoNHM:
@@ -138,10 +138,37 @@ class FpoNHM:
         self.start_date = start_date
         self.end_date = end_date
         self.fileprefix = fileprefix
+        # #check tmax for available dates
+        # now = datetime.today().date()
+        # yesterday = now - timedelta(days=1)
+        # tdata = getxml()['gridDataset']['TimeSpan']['end']
+        # tenddate = datetime.strptime(tdata[:10],'%Y-%m-%d').date()
+        # if self.type == 'date':
+        #     if self.end_date.date() <= tenddate:
+        #         print('Gridmet is available for time period specified - proceeding with pull')
+        #     else:
+        #         print(f'Requested end date {self.end_date.date()} is greater than available Gridmet end date {tenddate}')
+        #         print('process exiting')
+        #         sys.exit(1)
+        # # else:
+        # #     print(f'Requested end date {self.end_date.date()} is greater than yesterdays (Gridment updated to yesterday) date {yesterday}')
+        # #     print('process exiting')
+        # #     sys.exit(1)
+        # else:
+        #     if yesterday <= tenddate:
+        #         print('Gridmet is updated - proceeding with pull')
+        #     else:
+        #         print(f'Requested end date {yesterday} is greater than available Gridmet end date {tenddate}')
+        #         print('process exiting')
+        #         sys.exit(1)
+
         print(os.getcwd())
         os.chdir(self.iptpath)
         print(os.getcwd())
-        print(f'start_date: {self.start_date} and end_date: {self.end_date}')
+        if self.type == 'date':
+            print(f'start_date: {self.start_date} and end_date: {self.end_date}')
+        else:
+            print(f'number of days: {self.numdays}')
         # glob.glob produces different results on Win and Linux. Adding sorted makes result consistent
         filenames = sorted(glob.glob('*.shp'))
         self.gdf = pd.concat([gpd.read_file(f) for f in filenames], sort=True).pipe(gpd.GeoDataFrame)
@@ -202,7 +229,7 @@ class FpoNHM:
         except Exception as err:
             print('Other error occured: {err}')
         else:
-            print('Success!')
+            print('Gridmet data retrieved!')
 
         # write downloaded data to local netcdf files and open as xarray
         ncfile = (self.fileprefix + 'tmax_' + (datetime.now().strftime('%Y_%m_%d')) + '.nc',

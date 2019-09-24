@@ -114,6 +114,7 @@ def main():
         print('finished running')
         fp.finalize()
         print('finalized')
+        sys.exit(0)
     else:
         if extract_type == 'days':
             print('Gridmet not updated continue with numdays -1')
@@ -124,8 +125,10 @@ def main():
             print('finished running')
             fp.finalize()
             print('finalized')
+            sys.exit(0)
         else:
-            print('error: extract did not return period specified')
+            print('error: extract did not return period specified, Gridmet no updated')
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
