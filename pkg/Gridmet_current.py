@@ -35,13 +35,9 @@ for data in data_packets:
     masterURL = serverURL + '/' + data + '/' + urlsuffix
     datadef = getxml(masterURL)['gridDataset']['TimeSpan']['end']
     gm_date = datetime.strptime(datadef[:10],'%Y-%m-%d').date()
-    if gm_date == yesterday:
-        print(f'Gridmet data {data} is updated - continue')
-    else:
+    if gm_date != yesterday:
         print(f'Gridmet data {data} is not available - process exiting')
         sys.exit(1)
-print('All data ready to pull')
-sys.exit(0)
 
 def getxml(url):
     http = urllib3.PoolManager()
