@@ -10,7 +10,7 @@ def getxml(url):
     try:
         data = xmltodict.parse(response.data)
     except:
-        print("Failed to parse xml from response (%s)" % traceback.format_exc())
+        print("Failed to parse XML from response (%s)" % traceback.format_exc())
     return data
 
 
@@ -36,5 +36,6 @@ for data in data_packets:
     datadef = getxml(masterURL)['gridDataset']['TimeSpan']['end']
     gm_date = datetime.strptime(datadef[:10],'%Y-%m-%d').date()
     if gm_date != yesterday:
-        print(f'Gridmet data {data} is not available - process exiting')
+        print(f'Gridmet data {data} is not available:\n' +
+              'process exiting')
         sys.exit(1)
