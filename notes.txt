@@ -1,0 +1,18 @@
+2019-10-03
+Here is a list of all hru ids that are completely outside of conus and will get zero's for climate data mapped to
+to these hrus.  adjacent are near neighbors that could be used as proxy values.  However, even the proxi hru id's are
+only partially covered by gridmet data.
+
+46760 46765
+46766 46770
+46767 46770
+82924 82928
+82971 82925
+82983 82985
+82984 82985
+104388 104389
+
+2019-10-7
+Going to pull historical record by decades on my linux box.  Commands to run
+
+python pkg/climate_etl.py -t date -p 1979-01-01 1989-12-31 -f 1980_ -i Data -o Output -w Data/weights.csv > 1980_output.txt

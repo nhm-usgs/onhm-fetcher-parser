@@ -40,8 +40,15 @@ def gridmet_nc_to_geotiff(ds, time_index, path, filename, dsname):
 def np_get_wval(ndata, wghts, hru_id):
     """
     Returns weighted average of ndata with weights = grp
+    1) mdata = the subset of values associated with the gridmet id's that are mapped to hru_id.
+    2) Some of these values may have nans if the gridmet id is outside of conus so only return values
+    that are inside of conus
+    3) this means that hru's that are entirely outside of conus will return nans which will ultimately,
+    outside of this function get assigned zero's.
+    4) the value is assigned the weighted average
     :param ndata: float array of data values
     :param wghts: float array of weights
+    :param hru_id hru id number
     :return: numpy weighted averaged - masked to deal with nans associated with
             ndata that is outside of the conus.
     """
