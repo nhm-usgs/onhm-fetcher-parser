@@ -1,0 +1,22 @@
+name: ofp_env_dask2
+channels:
+- defaults
+- conda-forge
+dependencies:
+- python=3
+- matplotlib
+- numpy
+- pandas
+- xarray
+- dask
+- bottleneck
+- jupyter
+- notebook
+- cartopy
+- scipy
+- rasterio
+- rasterstats
+- geopandas
+- netcdf4
+- docker-py
+- xmltodict

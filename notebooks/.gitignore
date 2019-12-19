@@ -3,3 +3,6 @@
 *.gz
 *.png
 *.cbh
+dask-worker-space
+daymet_weights.csv
+tmp_weights.csv
