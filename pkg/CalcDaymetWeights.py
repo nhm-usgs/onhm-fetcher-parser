@@ -40,8 +40,8 @@ else:
         'south': '23',
         'disableProjSubset': 'on',
         'horizStride': '1',
-        'time_start': '2018-01-01T00:00:00Z',
-        'time_end': '2018-01-01T00:00:00Z',
+        'time_start': '2018-01-01T12:00:00Z',
+        'time_end': '2018-01-01T12:00:00Z',
         'timeStride': '1',
         'accept': 'netcdf'}
     try:

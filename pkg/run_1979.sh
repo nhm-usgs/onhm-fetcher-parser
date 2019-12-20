@@ -1,0 +1,1 @@
+python climate_etl.py -t date -p 1979-01-01 1979-12-31 -f 1979_ -i ../Data -o ../Output -w ../Data/weights.csv > 1979_ouput.txt
