@@ -190,12 +190,13 @@ with open('tmp_weights.csv', 'w', newline='') as f:
         if not(len(possible_matches_index) == 0):
             possible_matches = ncfcells.iloc[possible_matches_index]
             precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
-            res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
-            for nindex, row in res_intersection.iterrows():
-                tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
-                writer.writerow([np.int(precise_matches.index[count]), np.int(row['hru_id_nat']), tmpfloat])
-                count += 1
-            tcount += 1
-            if tcount%100 == 0:
-                print(tcount, index)
+            if not(len(precise_matches) == 0):
+                res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
+                for nindex, row in res_intersection.iterrows():
+                    tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
+                    writer.writerow([np.int(precise_matches.index[count]), np.int(row['hru_id_nat']), tmpfloat])
+                    count += 1
+                tcount += 1
+                if tcount%100 == 0:
+                    print(tcount, index)
 # f.close()
