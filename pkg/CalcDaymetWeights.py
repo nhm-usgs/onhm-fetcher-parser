@@ -131,11 +131,11 @@ count = 0
 # ncfcell = gpd.GeoDataFrame()
 # ncfcell['geometry'] = None
 
-cell_file = Path(r'../Data/daymet_cells.csv')
+cell_file = Path(r'../Data/daymet_cells_t.csv')
 if cell_file.exists():
     print('daymet cells exist - reading file - may take a while')
     ncfcells = gpd.read_file(cell_file)
-    print('finished reading daymet_cells.csv file')
+    print('finished reading daymet_cells_t.csv file')
 else:
     print('daymet cells file does not exist so creating cells and file')
     for i in range(1, np.shape(lon)[0] - 1):
@@ -169,9 +169,9 @@ else:
             count += 1
 
     ncfcells = gpd.GeoDataFrame(df, index=index, geometry=poly)
-    ncfcells.dropna(subset=['temperature'], inplace=True)
+    # ncfcells.dropna(subset=['temperature'], inplace=True)
     print('finished creating daymet cells - now writting file - may take a while')
-    ncfcells.to_csv('../Data/daymet_cells.csv')
+    # ncfcells.to_csv('../Data/daymet_cells_2.csv')
     print('finished writing daymet_cells.csv')
 
 ncfcells.head()
@@ -185,6 +185,7 @@ with open('tmp_weights.csv', 'w', newline='') as f:
     for index, row in gdf.iterrows():
         count = 0
         if tcount == 0:
+            # writer.writerow(['grid_ids', 'nhm_id', 'hru_id_nat', 'w'])
             writer.writerow(['grid_ids', 'hru_id_nat', 'w'])
         possible_matches_index = list(spatial_index.intersection(row['geometry'].bounds))
         if not(len(possible_matches_index) == 0):
@@ -194,9 +195,12 @@ with open('tmp_weights.csv', 'w', newline='') as f:
                 res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
                 for nindex, row in res_intersection.iterrows():
                     tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
+                    # writer.writerow([np.int(precise_matches.index[count]), np.int(row['nhm_id']), np.int(row['hru_id_nat']), tmpfloat])
                     writer.writerow([np.int(precise_matches.index[count]), np.int(row['hru_id_nat']), tmpfloat])
                     count += 1
                 tcount += 1
                 if tcount%100 == 0:
                     print(tcount, index)
+        else:
+            print('no intersection', index, np.int(row['hru_id_nat']))
 # f.close()
