@@ -9,20 +9,22 @@ import xarray as xr
 import json
 from shapely.geometry import Polygon
 import csv
+from pathlib import Path
+
 
 # Grab an example .nc file from Gridmet Thredds server
-#university of Idaho url:http://thredds.northwestknowledge.net:8080/thredds/ncss/agg_met_tmmx_1979_CurrentYear_CONUS.nc?
+# university of Idaho url:http://thredds.northwestknowledge.net:8080/thredds/ncss/agg_met_tmmx_1979_CurrentYear_CONUS.nc?
 # var=daily_maximum_temperature&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=2014-01-01T00%3A00%3A00Z
 # &time_end=2014-01-01T00%3A00%3A00Z&timeStride=1&accept=netcdf
 # file saved as: agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc
 
-uofi_file = r'../Data_v1_1/agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc'
+uofi_file: str = r'../Data_v1_1/agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc'
 ds = xr.open_dataset(uofi_file)
 print(ds)
-#Read NHM hru shapefiles into geopandas dataframe
+# Read NHM hru shapefiles into geopandas dataframe
 print(os.getcwd())
-from pathlib import Path
-folder = Path(r'../Data_v1_1') # assumes working directory is onhm-fetcher-parser
+
+folder = Path(r'../Data_v1_1')  # assumes working directory is onhm-fetcher-parser
 print(folder)
 # shapefiles = folder.glob("*_0[1-2].shp")
 shapefiles = folder.glob("*.shp")
@@ -80,8 +82,8 @@ count = 0
 
 for i in range(np.shape(lon)[0]):
     for j in range(np.shape(lon)[1]):
-        lat_point_list = [lat[i,j]-res, lat[i,j]+res, lat[i,j]+res, lat[i,j]-res]
-        lon_point_list = [lon[i,j]+res, lon[i,j]+res, lon[i,j]-res, lon[i,j]-res]
+        lat_point_list = [lat[i, j]-res, lat[i, j]+res, lat[i, j]+res, lat[i, j]-res]
+        lon_point_list = [lon[i, j]+res, lon[i, j]+res, lon[i, j]-res, lon[i, j]-res]
         poly.append(Polygon(zip(lon_point_list, lat_point_list)))
         index[count] = count
         count += 1
@@ -100,18 +102,20 @@ with open('tmp_weights2.csv', 'w', newline='') as f:
         if tcount == 0:
             writer.writerow(['grid_ids', 'nhm_id', 'hru_id_nat', 'w'])
         possible_matches_index = list(spatial_index.intersection(row['geometry'].bounds))
-        # if not(len(possible_matches_index) == 0):
-        possible_matches = ncfcells.iloc[possible_matches_index]
-        precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
-            # if not(len(precise_matches) == 0):
-        res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
-        for nindex, row in res_intersection.iterrows():
-            tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
-            writer.writerow([np.int(precise_matches.index[count]), np.int(row['nhm_id']), np.int(row['hru_id_nat']), tmpfloat])
-            count += 1
-        tcount += 1
-        if tcount%100 == 0:
-            print(tcount, index)
-        # else:
-        #     print('no intersection: ', index, np.int(row['nhm_id']))
-# f.close()
+        if not(len(possible_matches_index) == 0):
+            possible_matches = ncfcells.iloc[possible_matches_index]
+            precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
+            if not(len(precise_matches) == 0):
+                res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
+                for nindex, row2 in res_intersection.iterrows():
+                    tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
+                    writer.writerow([np.int(precise_matches.index[count]), np.int(row2['nhm_id']), 
+                                     np.int(row2['hru_id_nat']), tmpfloat])
+                    count += 1
+                tcount += 1
+                if tcount % 100 == 0:
+                    print(tcount, index)
+            else:
+                print('no intersection 2: ', index, np.int(row['nhm_id']))
+        else:
+            print('no intersection: ', index, np.int(row['nhm_id']))

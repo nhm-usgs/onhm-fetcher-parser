@@ -3,6 +3,8 @@ Data_v1_1
 Output/
 Output/*.nc
 Output/*.txt
+*.7z
+*.zip
 pkg/__pycache__
 notebooks/.ipynb_checkpoints/
 .idea
