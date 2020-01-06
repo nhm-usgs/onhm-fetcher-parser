@@ -101,7 +101,7 @@ class FpoNHM:
         # num HRUs
         self.num_hru = None
 
-        # grouby hru_id_nat on wieghts file
+        # grouby GFv11_id on wieghts file
         self.unique_hru_ids = None
 
         # numpy arrays to store mapped climate data
@@ -317,7 +317,7 @@ class FpoNHM:
         # =========================================================
 
         wght_uofi = pd.read_csv(self.iptpath / Path(self.wghts_file))
-        self.unique_hru_ids = wght_uofi.groupby('hru_id_nat')
+        self.unique_hru_ids = wght_uofi.groupby('GFv11_id')
         print('finished reading weight file')
 
         # intialize numpy arrays to store climate vars
@@ -354,8 +354,8 @@ class FpoNHM:
             tws_h_flt = self.ws_h.values[day, :, :].flatten(order='K')
 
             for index, row in self.gdf.iterrows():
-                # weight_id_rows = wght_df_40.loc[wght_df_40['hru_id_nat'] == row['hru_id_nat']]
-                weight_id_rows = self.unique_hru_ids.get_group(row['hru_id_nat'])
+                # weight_id_rows = wght_df_40.loc[wght_df_40['GFv11_id'] == row['GFv11_id']]
+                weight_id_rows = self.unique_hru_ids.get_group(row['GFv11_id'])
                 tmax[index] = np.nan_to_num(np_get_wval(tmax_h_flt, weight_id_rows, index+1) - 273.5)
                 tmin[index] = np.nan_to_num(np_get_wval(tmin_h_flt, weight_id_rows, index+1) - 273.5)
                 ppt[index] = np.nan_to_num(np_get_wval(tppt_h_flt, weight_id_rows, index+1))
@@ -364,7 +364,7 @@ class FpoNHM:
                 ws[index] = np.nan_to_num(np_get_wval(tws_h_flt, weight_id_rows, index+1))
 
                 if index % 10000 == 0:
-                    print(index, row['hru_id_nat'])
+                    print(index, row['GFv11_id'])
 
             self.np_tmax[day, :] = tmax
             self.np_tmin[day, :] = tmin
@@ -464,7 +464,7 @@ class FpoNHM:
         time[:] = np.arange(0, self.numdays)
         lon[:] = tlon
         lat[:] = tlat
-        hru[:] = self.gdf['hru_id_nat'].values
+        hru[:] = self.gdf['GFv11_id'].values
         # print(hruid)
         # tmax[0,:] = gdf['tmax'].values
         # tmin[0,:] = gdf['tmin'].values

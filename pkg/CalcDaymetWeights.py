@@ -24,24 +24,25 @@ def distance(p1x, p1y, p2x, p2y):
 #time_start=2018-01-01T12%3A00%3A00Z&time_end=2018-01-01T12%3A00%3A00Z&timeStride=1&accept=netcdf
 # file saved as: daymet_v3_tmax_2018_na.nc4.nc
 
-dm_file = Path(r'../Data/daymet_v3_tmax_2018_na.nc4.nc')
+dm_file = Path(r'../Data_v1_1/daymet_tmp.nc')
 if dm_file.exists():
     print('netcdf file exists opening data in xarray')
     ds = xr.open_dataset(dm_file)
     print('finished reading netcdf file')
 else:
     print('netcdf file does not exist - downloading ...')
-    prcpurl = 'https://thredds.daac.ornl.gov/thredds/ncss/ornldaac/1328/2018/daymet_v3_tmax_2018_na.nc4'
+    prcpurl = 'https://thredds.daac.ornl.gov/thredds/ncss/daymet-v3-agg/na.ncml'
     prcppayload = {
-        'var': 'lat&var=lon&var=tmax',
+        #     'var': 'lat&var=lon&var=tmax',
+        'var': 'lat&var=lon&var=prcp&var=srad&var=swe&var=tmax&var=tmin&var=vp',
         'north': '54',
         'west': '-126',
         'east': '-65',
         'south': '23',
         'disableProjSubset': 'on',
         'horizStride': '1',
-        'time_start': '2018-01-01T12:00:00Z',
-        'time_end': '2018-01-01T12:00:00Z',
+        'time_start': '2018-12-31T12:00:00Z',
+        'time_end': '2018-12-31T12:00:00Z',
         'timeStride': '1',
         'accept': 'netcdf'}
     try:
@@ -57,11 +58,11 @@ else:
     except Exception as err:
         print(f'Other error occured: {err}')
     else:
-        print('daymet data retrieved!')
-        with open(r'../Data/daymet_v3_tmax_2018_na.nc4.nc', 'wb') as fh:
+        print('Gridmet data retrieved!')
+        with open(r'../Data_v1_1/daymet_tmp.nc', 'wb') as fh:
             fh.write(tmaxfile.content)
         fh.close
-        dm_file = Path(r'../Data/daymet_v3_tmax_2018_na.nc4.nc')
+        dm_file = Path(r'../Data_v1_1/daymet_tmp.nc')
         ds = xr.open_dataset(dm_file)
         print('finished downloading netcdf file')
 
@@ -69,7 +70,7 @@ print(ds)
 #Read NHM hru shapefiles into geopandas dataframe
 print(os.getcwd())
 
-folder = Path(r'../Data') # assumes working directory is onhm-fetcher-parser
+folder = Path(r'../Data_v1_1') # assumes working directory is onhm-fetcher-parser
 print(folder)
 # shapefiles = folder.glob("*_0[1].shp")
 shapefiles = folder.glob("*.shp")
@@ -169,7 +170,7 @@ else:
             count += 1
 
     ncfcells = gpd.GeoDataFrame(df, index=index, geometry=poly)
-    # ncfcells.dropna(subset=['temperature'], inplace=True)
+    ncfcells.dropna(subset=['temperature'], inplace=True)
     print('finished creating daymet cells - now writting file - may take a while')
     # ncfcells.to_csv('../Data/daymet_cells_2.csv')
     print('finished writing daymet_cells.csv')
@@ -180,13 +181,13 @@ print('Creating Spatial Index - This could take some time')
 spatial_index = ncfcells.sindex
 print('Finished Spatial Index')
 tcount = 0
-with open('tmp_weights.csv', 'w', newline='') as f:
+with open('tmp_weights_daymet.csv', 'w', newline='') as f:
     writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for index, row in gdf.iterrows():
         count = 0
         if tcount == 0:
-            # writer.writerow(['grid_ids', 'nhm_id', 'hru_id_nat', 'w'])
-            writer.writerow(['grid_ids', 'hru_id_nat', 'w'])
+            # writer.writerow(['grid_ids', 'GFv11_id', 'hru_id_nat', 'w'])
+            writer.writerow(['grid_ids', 'GFv11_id', 'w'])
         possible_matches_index = list(spatial_index.intersection(row['geometry'].bounds))
         if not(len(possible_matches_index) == 0):
             possible_matches = ncfcells.iloc[possible_matches_index]
@@ -195,12 +196,12 @@ with open('tmp_weights.csv', 'w', newline='') as f:
                 res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
                 for nindex, row in res_intersection.iterrows():
                     tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
-                    # writer.writerow([np.int(precise_matches.index[count]), np.int(row['nhm_id']), np.int(row['hru_id_nat']), tmpfloat])
-                    writer.writerow([np.int(precise_matches.index[count]), np.int(row['hru_id_nat']), tmpfloat])
+                    # writer.writerow([np.int(precise_matches.index[count]), np.int(row['GFv11_id']), np.int(row['hru_id_nat']), tmpfloat])
+                    writer.writerow([np.int(precise_matches.index[count]), np.int(row['GFv11_id']), tmpfloat])
                     count += 1
                 tcount += 1
                 if tcount%100 == 0:
                     print(tcount, index)
         else:
-            print('no intersection', index, np.int(row['hru_id_nat']))
+            print('no intersection', index, np.int(row['GFv11_id']))
 # f.close()

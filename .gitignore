@@ -1,5 +1,7 @@
-Data
-Data_v1_1
+Data/
+Data_v1_1/
+GFv1.1_v2b.gdb
+Data_v1_1.zip
 Output/
 Output/*.nc
 Output/*.txt
