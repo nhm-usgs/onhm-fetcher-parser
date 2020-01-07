@@ -24,7 +24,7 @@ def distance(p1x, p1y, p2x, p2y):
 #time_start=2018-01-01T12%3A00%3A00Z&time_end=2018-01-01T12%3A00%3A00Z&timeStride=1&accept=netcdf
 # file saved as: daymet_v3_tmax_2018_na.nc4.nc
 
-dm_file = Path(r'../Data_v1_1/daymet_tmp.nc')
+dm_file = Path(r'../Data_v1_1/daymet_tmp2.nc')
 if dm_file.exists():
     print('netcdf file exists opening data in xarray')
     ds = xr.open_dataset(dm_file)
@@ -122,8 +122,8 @@ count = 0
 # ncfcell = gpd.GeoDataFrame()
 # ncfcell['geometry'] = None
 
-df = pd.DataFrame({'temperature': ds.tmax.values.flatten()})
-res = 0.04166666 / 2.0
+# df = pd.DataFrame({'temperature': ds.tmax.values.flatten()})
+# res = 0.04166666 / 2.0
 numcells = (np.shape(lat)[0] - 2) * (
             np.shape(lat)[1] - 2)  # -2 to ignore boundaries, daymet domain should well overlap conus
 poly = []
@@ -132,39 +132,52 @@ count = 0
 # ncfcell = gpd.GeoDataFrame()
 # ncfcell['geometry'] = None
 
-cell_file = Path(r'../Data/daymet_cells_t.csv')
+cell_file = Path(r'../Data/daymet_cells_t3.csv')
 if cell_file.exists():
     print('daymet cells exist - reading file - may take a while')
     ncfcells = gpd.read_file(cell_file)
     print('finished reading daymet_cells_t.csv file')
 else:
     print('daymet cells file does not exist so creating cells and file')
-    for i in range(1, np.shape(lon)[0] - 1):
-        if i % 10 == 0: print(i)
-        for j in range(1, np.shape(lon)[1] - 1):
-            tpoly_1_lon = [lon[i, j], lon[i, j - 1], lon[i + 1, j - 1], lon[i + 1, j]]
-            tpoly_1_lat = [lat[i, j], lat[i, j - 1], lat[i + 1, j - 1], lat[i + 1, j]]
+    for j in range(np.shape(lon)[1]):
+        if j%10 == 0: print(j)
+        for i in range(np.shape(lon)[0]):
+            jm1 = j-1
+            jp1 = j+1
+            im1 = i-1
+            ip1 = i+1
+            if j == 0:
+                jm1 = 1
+            if j == np.shape(lon)[1]-1:
+                jp1 = j-1
+            if i == 0:
+                im1 = 1
+            if i == np.shape(lon)[0]-1:
+                ip1 = i-1
+                
+            tpoly_1_lon = [lon[i,j], lon[i,jm1], lon[ip1,jm1], lon[ip1, j]]
+            tpoly_1_lat = [lat[i,j], lat[i,jm1], lat[ip1,jm1], lat[ip1, j]]
             tpoly_1 = Polygon(zip(tpoly_1_lon, tpoly_1_lat))
             p1 = tpoly_1.centroid
-
-            tpoly_2_lon = [lon[i, j], lon[i + 1, j], lon[i + 1, j + 1], lon[i, j + 1]]
-            tpoly_2_lat = [lat[i, j], lat[i + 1, j], lat[i + 1, j + 1], lat[i, j + 1]]
+            
+            tpoly_2_lon = [lon[i,j], lon[ip1,j], lon[ip1,jp1], lon[i, jp1]]
+            tpoly_2_lat = [lat[i,j], lat[ip1,j], lat[ip1,jp1], lat[i, jp1]]
             tpoly_2 = Polygon(zip(tpoly_2_lon, tpoly_2_lat))
-            p2 = tpoly_2.centroid
-
-            tpoly_3_lon = [lon[i, j], lon[i, j + 1], lon[i - 1, j + 1], lon[i - 1, j]]
-            tpoly_3_lat = [lat[i, j], lat[i, j + 1], lat[i - 1, j + 1], lat[i - 1, j]]
+            p2 = tpoly_2.centroid  
+            
+            tpoly_3_lon = [lon[i,j], lon[i,jp1], lon[im1,jp1], lon[im1, j]]
+            tpoly_3_lat = [lat[i,j], lat[i,jp1], lat[im1,jp1], lat[im1, j]]
             tpoly_3 = Polygon(zip(tpoly_3_lon, tpoly_3_lat))
-            p3 = tpoly_3.centroid
+            p3 = tpoly_3.centroid  
 
-            tpoly_4_lon = [lon[i, j], lon[i - 1, j], lon[i - 1, j - 1], lon[i, j - 1]]
-            tpoly_4_lat = [lat[i, j], lat[i - 1, j], lat[i - 1, j - 1], lat[i, j - 1]]
+            tpoly_4_lon = [lon[i,j], lon[im1,j], lon[im1,jm1], lon[i, jm1]]
+            tpoly_4_lat = [lat[i,j], lat[im1,j], lat[im1,jm1], lat[i, jm1]]
             tpoly_4 = Polygon(zip(tpoly_4_lon, tpoly_4_lat))
-            p4 = tpoly_4.centroid
-
+            p4 = tpoly_4.centroid  
+            
             lon_point_list = [p1.x, p2.x, p3.x, p4.x]
             lat_point_list = [p1.y, p2.y, p3.y, p4.y]
-
+            
             poly.append(Polygon(zip(lon_point_list, lat_point_list)))
             index[count] = count
             count += 1
