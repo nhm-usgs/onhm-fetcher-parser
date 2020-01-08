@@ -124,7 +124,8 @@ count = 0
 
 # df = pd.DataFrame({'temperature': ds.tmax.values.flatten()})
 # res = 0.04166666 / 2.0
-numcells = (np.shape(lat)[0]) * (np.shape(lat)[1]) 
+numcells = (np.shape(lat)[0] - 2) * (
+            np.shape(lat)[1] - 2)  # -2 to ignore boundaries, daymet domain should well overlap conus
 poly = []
 index = np.zeros(numcells, dtype=int)
 count = 0
