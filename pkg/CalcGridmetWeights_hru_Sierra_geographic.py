@@ -129,18 +129,18 @@ with open('../SierraData/Sierra_weights_hru_v3.csv', 'w', newline='') as f:
         if tcount == 0:
             writer.writerow(['grid_ids', 'HRU_ID', 'w'])
         possible_matches_index = list(spatial_index.intersection(row['geometry'].bounds))
-        # if not(len(possible_matches_index) == 0):
-        possible_matches = ncfcells.iloc[possible_matches_index]
-        precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
-        # if not(len(precise_matches) == 0):
-        res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
-        for nindex, row in res_intersection.iterrows():
-            tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
-            writer.writerow([np.int(precise_matches.index[count]), np.int(row['HRU_ID']), tmpfloat])
-            count += 1
-        tcount += 1
-        if tcount%100 == 0:
-            print(tcount, index)
-        # else:
-        #     print('no intersection: ', index, np.int(row['nhm_id']))
+        if not(len(possible_matches_index) == 0):
+            possible_matches = ncfcells.iloc[possible_matches_index]
+            precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
+            if not(len(precise_matches) == 0):
+                res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
+                for nindex, row in res_intersection.iterrows():
+                    tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
+                    writer.writerow([np.int(precise_matches.index[count]), np.int(row['HRU_ID']), tmpfloat])
+                    count += 1
+                tcount += 1
+                if tcount%100 == 0:
+                    print(tcount, index)
+        else:
+            print('no intersection: ', index, np.int(row['nhm_id']))
 # f.close()
