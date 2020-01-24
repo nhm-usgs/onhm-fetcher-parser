@@ -7,6 +7,9 @@ Output/*.nc
 Output/*.txt
 *.7z
 *.zip
+DeschutesData/
+RussianData/
+SierraData/
 pkg/__pycache__
 notebooks/.ipynb_checkpoints/
 .idea
