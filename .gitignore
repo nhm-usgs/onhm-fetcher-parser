@@ -3,6 +3,11 @@ Data_v1_1
 Output/
 Output/*.nc
 Output/*.txt
+*.zip
+*.7z
+RussianData/
+SierraData/
+DeschutesData/
 pkg/__pycache__
 notebooks/.ipynb_checkpoints/
 .idea
