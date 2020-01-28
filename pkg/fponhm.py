@@ -317,7 +317,8 @@ class FpoNHM:
         # =========================================================
 
         wght_uofi = pd.read_csv(self.iptpath / Path(self.wghts_file))
-
+        # wght_uofi = pd.read_csv(Path(self.wghts_file))
+        print(self.iptpath / Path(self.wghts_file))
         self.unique_hru_ids = wght_uofi.groupby('GFv11_id')
 
         print('finished reading weight file')
