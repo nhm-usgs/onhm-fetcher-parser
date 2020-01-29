@@ -130,9 +130,24 @@ class FpoNHM:
         :param optpath: directory to save netcdf input files
         :return: success or failure
         """
-        self.iptpath = iptpath
-        self.optpath = optpath
-        self.wghts_file = weights_file
+        self.iptpath = Path(iptpath)
+        if self.iptpath.exists():
+            print('input path exits')
+        else:
+            print('input path does not exist')
+
+        self.optpath = Path(optpath)
+        if self.optpath.exists():
+            print('output path exits')
+        else:
+            print('output path does not exist')
+
+        self.wghts_file = Path(weights_file)
+        if self.wghts_file.exists():
+            print('weights file exits', self.wghts_file)
+        else:
+            print('weights file not exist')
+        self.wghts_id = None
         self.type = type
         self.numdays = days
         self.start_date = start_date
@@ -162,15 +177,18 @@ class FpoNHM:
         #         print('process exiting')
         #         sys.exit(1)
 
-        print(os.getcwd())
-        os.chdir(self.iptpath)
-        print(os.getcwd())
+        # print(os.getcwd())
+        # os.chdir(self.iptpath)
+        # print(os.getcwd())
+        print(Path.cwd())
         if self.type == 'date':
             print(f'start_date: {self.start_date} and end_date: {self.end_date}')
         else:
             print(f'number of days: {self.numdays}')
         # glob.glob produces different results on Win and Linux. Adding sorted makes result consistent
-        filenames = sorted(glob.glob('*.shp'))
+        # filenames = sorted(glob.glob('*.shp'))
+        # use pathlib glob
+        filenames = sorted(self.iptpath.glob('*.shp'))
         self.gdf = pd.concat([gpd.read_file(f) for f in filenames], sort=True).pipe(gpd.GeoDataFrame)
         self.gdf.reset_index(drop=True, inplace=True)
         print(filenames)
@@ -232,12 +250,12 @@ class FpoNHM:
             print('Gridmet data retrieved!')
 
         # write downloaded data to local netcdf files and open as xarray
-        ncfile = (self.fileprefix + 'tmax_' + (datetime.now().strftime('%Y_%m_%d')) + '.nc',
-                  self.fileprefix + 'tmin_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
-                  self.fileprefix + 'ppt_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
-                  self.fileprefix + 'rhmax_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
-                  self.fileprefix + 'rhmin_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
-                  self.fileprefix + 'ws_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',)
+        ncfile = (self.iptpath / (self.fileprefix + 'tmax_' + (datetime.now().strftime('%Y_%m_%d')) + '.nc'),
+                  self.iptpath / (self.fileprefix + 'tmin_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
+                  self.iptpath / (self.fileprefix + 'ppt_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
+                  self.iptpath / (self.fileprefix + 'rhmax_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
+                  self.iptpath / (self.fileprefix + 'rhmin_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
+                  self.iptpath / (self.fileprefix + 'ws_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'))
 
         for index, tfile in enumerate(ncfile):
             with open(tfile, 'wb') as fh:
@@ -315,9 +333,14 @@ class FpoNHM:
         # =========================================================
         #       Read hru weights
         # =========================================================
+        # read the weights file
+        wght_uofi = pd.read_csv(self.wghts_file)
+        # grab the hru_id from the weights file and use as identifier below
+        self.wghts_id = wght_uofi.columns[1]
 
-        wght_uofi = pd.read_csv(self.iptpath / Path(self.wghts_file))
-        self.unique_hru_ids = wght_uofi.groupby('hru_id_nat')
+        #group by the weights_id for processing
+        self.unique_hru_ids = wght_uofi.groupby(self.wghts_id)
+
         print('finished reading weight file')
 
         # intialize numpy arrays to store climate vars
@@ -354,8 +377,8 @@ class FpoNHM:
             tws_h_flt = self.ws_h.values[day, :, :].flatten(order='K')
 
             for index, row in self.gdf.iterrows():
-                # weight_id_rows = wght_df_40.loc[wght_df_40['hru_id_nat'] == row['hru_id_nat']]
-                weight_id_rows = self.unique_hru_ids.get_group(row['hru_id_nat'])
+                # weight_id_rows = wght_df_40.loc[wght_df_40[self.wghts_id] == row[self.wghts_id]]
+                weight_id_rows = self.unique_hru_ids.get_group(row[self.wghts_id])
                 tmax[index] = np.nan_to_num(np_get_wval(tmax_h_flt, weight_id_rows, index+1) - 273.5)
                 tmin[index] = np.nan_to_num(np_get_wval(tmin_h_flt, weight_id_rows, index+1) - 273.5)
                 ppt[index] = np.nan_to_num(np_get_wval(tppt_h_flt, weight_id_rows, index+1))
@@ -364,7 +387,7 @@ class FpoNHM:
                 ws[index] = np.nan_to_num(np_get_wval(tws_h_flt, weight_id_rows, index+1))
 
                 if index % 10000 == 0:
-                    print(index, row['hru_id_nat'])
+                    print(index, row[self.wghts_id])
 
             self.np_tmax[day, :] = tmax
             self.np_tmin[day, :] = tmin
@@ -385,10 +408,10 @@ class FpoNHM:
         tmp = 0
 
     def finalize(self):
-        print(os.getcwd())
-        os.chdir(self.optpath)
-        print(os.getcwd())
-        ncfile = netCDF4.Dataset(self.fileprefix + 'climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
+        # print(os.getcwd())
+        # os.chdir(self.optpath)
+        print(Path.cwd())
+        ncfile = netCDF4.Dataset(self.optpath / (self.fileprefix + 'climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
                                  mode='w', format='NETCDF4_CLASSIC')
 
         # Global Attributes
@@ -464,7 +487,7 @@ class FpoNHM:
         time[:] = np.arange(0, self.numdays)
         lon[:] = tlon
         lat[:] = tlat
-        hru[:] = self.gdf['hru_id_nat'].values
+        hru[:] = self.gdf[self.wghts_id].values
         # print(hruid)
         # tmax[0,:] = gdf['tmax'].values
         # tmin[0,:] = gdf['tmin'].values

@@ -59,7 +59,7 @@ def main():
                            default=None, required=True)
 
     my_parser.add_argument('-w', '--weightsfile', type=str,
-                           help='path/weight.csv - path to weight file', metavar='weight_file',
+                           help='path/weight.csv - path/name of weight file', metavar='weight_file',
                            default=None, required=True)
 
     args = my_parser.parse_args()
