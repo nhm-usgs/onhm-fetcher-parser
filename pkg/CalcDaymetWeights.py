@@ -38,7 +38,7 @@ else:
         'north': '54',
         'west': '-126',
         'east': '-65',
-        'south': '23',
+        'south': '20',
         'disableProjSubset': 'on',
         'horizStride': '1',
         'time_start': '2018-12-31T12:00:00Z',
@@ -124,15 +124,14 @@ count = 0
 
 # df = pd.DataFrame({'temperature': ds.tmax.values.flatten()})
 # res = 0.04166666 / 2.0
-numcells = (np.shape(lat)[0] - 2) * (
-            np.shape(lat)[1] - 2)  # -2 to ignore boundaries, daymet domain should well overlap conus
+numcells = (np.shape(lat)[0]) * (np.shape(lat)[1]) 
 poly = []
 index = np.zeros(numcells, dtype=int)
 count = 0
 # ncfcell = gpd.GeoDataFrame()
 # ncfcell['geometry'] = None
 
-cell_file = Path(r'../Data/daymet_cells_t3.csv')
+cell_file = Path(r'../Data/daymet_cells_t4.csv')
 if cell_file.exists():
     print('daymet cells exist - reading file - may take a while')
     ncfcells = gpd.read_file(cell_file)
@@ -194,7 +193,7 @@ print('Creating Spatial Index - This could take some time')
 spatial_index = ncfcells.sindex
 print('Finished Spatial Index')
 tcount = 0
-with open('tmp_weights_daymet.csv', 'w', newline='') as f:
+with open('tmp_weights_daymet2.csv', 'w', newline='') as f:
     writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for index, row in gdf.iterrows():
         count = 0
