@@ -130,6 +130,52 @@ def get_gm_url(type, dataset, numdays=None, startdate=None, enddate=None,  ctype
             'accept': 'netcdf'}
         return str_start_cf, url, payload
 
+def get_dm_url(type, numdays=None, startdate=None, enddate=None,  ctype='Daymet'):
+    """
+    This helper function returns a url and payload to be used with requests
+    to get climate data.  Returned values can be used in a request for example:
+    myfile = requests.get(url, params=payload)
+
+    :param numdays: proceeding number of days to retrieve
+    :param dataset: datset to retrieve can be:
+        'tmax', 'tmin', 'ppt'
+    :param ctype: Type of url to retrieve:
+        'GridMet':
+    :return: URL for retrieving GridMet subset data and payload of options
+    """
+    sformat = "%Y-%m-%d"
+    if type == 'days':
+        dt1 = dt.timedelta(days=1) # because Gridmet data release today is yesterdays data
+        dt2 = dt.timedelta(days=numdays)
+
+        end = dt.datetime.now() - dt1
+        start = dt.datetime.now() - dt2
+        str_start = start.strftime(sformat) + "T12:00:00Z"
+        str_end = end.strftime(sformat) + "T12:00:00Z"
+        str_start_cf = start.strftime(sformat) + " 12:00:00"
+    elif type == 'date':
+        str_start = startdate.strftime(sformat) + "T12:00:00Z"
+        str_end = enddate.strftime(sformat) + "T12:00:00Z"
+        str_start_cf = startdate.strftime(sformat) + " 12:00:00"
+
+    dsvar = None
+# https://thredds.daac.ornl.gov/thredds/ncss/grid/daymet-v3-agg/na.ncml/dataset.html
+    url = 'https://thredds.daac.ornl.gov/thredds/ncss/daymet-v3-agg/na.ncml'
+
+    payload = {
+        'var': 'lat&var=lon&var=dayl&var=prcp&var=srad&var=swe&var=tmax&var=tmin&var=vp',
+        'north': '54',
+        'west': '-126',
+        'east': '-65',
+        'south': '20',
+        'disableProjSubset': 'on',
+        'horizStride': '1',
+        'time_start': str_start,
+        'time_end': str_end,
+        'timeStride': '1',
+        'accept': 'netcdf'}
+    return str_start_cf, url, payload
+
 def getxml():
     url = "http://thredds.northwestknowledge.net:8080/thredds/ncss/grid/agg_met_tmmx_1979_CurrentYear_CONUS.nc/dataset.xml"
     import urllib3

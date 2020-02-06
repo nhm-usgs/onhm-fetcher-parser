@@ -20,6 +20,7 @@ def main():
     wght_file = None
     extract_type = None
     file_prefix = None
+    climsource = None
 
     my_parser = argparse.ArgumentParser(prog='climate_etl',
                                     description='map gridded climate data to polygon using zonal area weighted mean')
@@ -62,6 +63,10 @@ def main():
                            help='path/weight.csv - path to weight file', metavar='weight_file',
                            default=None, required=True)
 
+    my_parser.add_argument('-s', '--source', type=str,
+                           help='source of climate forcing (eg. Gridmet)', metavar='climsource',
+                           default='GridMetSS', choices=['GridMetSS', 'DayMet'])
+
     args = my_parser.parse_args()
 
     if all(i is not None for i  in [args.period, args.days]):
@@ -95,6 +100,8 @@ def main():
         wght_file = args.weightsfile
     if args.file_prefix is not None:
         file_prefix = args.file_prefix
+    if args.source is not None:
+        climsource = args.source
     test = 0
 
 
@@ -106,13 +113,19 @@ def main():
     # ready = fp.initialize(idir, odir, wght_file, extract_type, numdays, startdate, enddate, file_prefix)
     ready = fp.initialize(idir, odir, wght_file, type=extract_type, days=numdays,
                           start_date=startdate, end_date=enddate,
-                          fileprefix=file_prefix)
+                          fileprefix=file_prefix, climsource=climsource)
     if ready:
         print('initalized\n')
         print('running')
-        fp.run_weights()
+        if climsource == 'GridMetSS':
+            fp.run_weights()
+        elif climsource == 'DayMet':
+            fp.run_weights_dm()
         print('finished running')
-        fp.finalize()
+        if climsource == 'GridMetSS':
+            fp.finalize()
+        elif climsource == 'DayMet':
+            fp.finalize_dm()
         print('finalized')
         sys.exit(0)
     else:
