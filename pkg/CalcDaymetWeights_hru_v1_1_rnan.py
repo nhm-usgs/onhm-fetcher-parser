@@ -167,14 +167,14 @@ for i in range(1, np.shape(lon)[0] - 1):
         count += 1
 # ncfcells = gpd.GeoDataFrame(df, index=index, crs=ds['crs'], geometry=poly)
 ncfcells2 = gpd.GeoDataFrame(df, index=index2, geometry=poly2)
-# ncfcells2.dropna(subset=['temperature'], inplace=True)
+ncfcells2.dropna(subset=['temperature'], inplace=True)
 ncfcells2.head()
 print('Creating Spatial Index - This could take some time', flush=True)
 spatial_index2 = ncfcells2.sindex
 print('Finished Spatial Index', flush=True)
 
 tcount = 0
-with open('tmp_daymet_weights_hru_v1_1.csv', 'w', newline='') as f:
+with open('tmp_daymet_weights_hru_v1_1_rnan.csv', 'w', newline='') as f:
     writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for index, row in gdf.iterrows():
         count = 0
