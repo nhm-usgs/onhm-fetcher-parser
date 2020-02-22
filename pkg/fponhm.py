@@ -350,15 +350,15 @@ class FpoNHM:
             self.crs_h = self.ds_daymet['lambert_conformal_conic']
 
 
-            self.dayl_h = self.ds_daymet['dayl']
-            self.prcp_h = self.ds_daymet['prcp']
-            self.srad_h = self.ds_daymet['srad']
-            self.swe_h = self.ds_daymet['swe']
-            self.tmax_h = self.ds_daymet['tmax']
-            self.tmin_h = self.ds_daymet['tmin']
-            self.vp_h = self.ds_daymet['vp']
+            # self.dayl_h = self.ds_daymet['dayl']
+            # self.prcp_h = self.ds_daymet['prcp']
+            # self.srad_h = self.ds_daymet['srad']
+            # self.swe_h = self.ds_daymet['swe']
+            # self.tmax_h = self.ds_daymet['tmax']
+            # self.tmin_h = self.ds_daymet['tmin']
+            # self.vp_h = self.ds_daymet['vp']
             # assume data sizes are the same for all vars - using tmax here
-            ts = self.tmax_h.sizes
+            ts = self.ds_daymet['tmax'].sizes
             self.dayshape = ts['time']
             self.lonshape = ts['x']
             self.latshape = ts['y']
@@ -450,7 +450,7 @@ class FpoNHM:
         self.unique_hru_ids = wght_dm.groupby(self.wghts_id)
         print('finished reading weight file')
 
-        lon = self.ds_daymet.lon.values
+        # lon = self.ds_daymet.lon.values
         # intialize numpy arrays to store climate vars
         self.np_dayl = np.zeros((self.numdays, self.num_hru))
         self.np_prcp = np.zeros((self.numdays, self.num_hru))
@@ -462,63 +462,74 @@ class FpoNHM:
 
         for day in np.arange(self.numdays):
             print(day)
-            dayl = np.zeros(self.num_hru)
-            prcp = np.zeros(self.num_hru)
-            srad = np.zeros(self.num_hru)
-            swe = np.zeros(self.num_hru)
-            tmax = np.zeros(self.num_hru)
-            tmin = np.zeros(self.num_hru)
-            vp = np.zeros(self.num_hru)
+            for var in self.dmss_vars:
+                print(var)
+                d_var = np.zeros(self.num_hru)
 
-            #reformat and flatten data arrays - as done in weights calculation
-            dayl_flt = np.zeros(self.lonshape*self.latshape)
-            prcp_flt = np.zeros(self.lonshape*self.latshape)
-            srad_flt = np.zeros(self.lonshape*self.latshape)
-            swe_flt = np.zeros(self.lonshape*self.latshape)
-            tmax_flt = np.zeros(self.lonshape*self.latshape)
-            tmin_flt = np.zeros(self.lonshape*self.latshape)
-            vp_flt = np.zeros(self.lonshape*self.latshape)
+                #reformat and flatten data arrays - as done in weights calculation
+                d_flt = np.zeros(self.lonshape*self.latshape)
 
-            tlc = 0
-            for j in range(np.shape(lon)[1]):
-                for i in range(np.shape(lon)[0]):
-                    dayl_flt[tlc] = self.dayl_h.values[self.dayshape-1, i, j]
-                    prcp_flt[tlc] = self.prcp_h.values[self.dayshape-1, i, j]
-                    srad_flt[tlc] = self.srad_h.values[self.dayshape-1, i, j]
-                    swe_flt[tlc] = self.swe_h.values[self.dayshape-1, i, j]
-                    tmax_flt[tlc] = self.tmax_h.values[self.dayshape-1, i, j]
-                    tmin_flt[tlc] = self.tmin_h.values[self.dayshape-1, i, j]
-                    vp_flt[tlc] = self.vp_h.values[self.dayshape-1, i, j]
-                    tlc+=1
+                tlc = 0
+                ival = np.shape(self.ds_daymet.lon.values)[0] - 1
+                jval = np.shape(self.ds_daymet.lon.values)[1] - 1
+                print("remapping gridmet", flush=True)
+                for i in range(1, ival):
+                    # if i % 100 == 0: print(i, flush=True)
+                    for j in range(1, jval):
+                        if var == 'dayl':
+                            d_flt[tlc] = self.ds_daymet['dayl'].values[day-1, i, j]
+                        elif var == 'prcp':
+                            d_flt[tlc] = self.ds_daymet['prcp'].values[day-1, i, j]
+                        elif var == 'srad':
+                            d_flt[tlc] = self.ds_daymet['srad'].values[day-1, i, j]
+                        elif var == 'swe':
+                            d_flt[tlc] = self.ds_daymet['swe'].values[day-1, i, j]
+                        elif var == 'tmax':
+                            d_flt[tlc] = self.ds_daymet['tmax'].values[day-1, i, j]
+                        elif var == 'tmin':
+                            d_flt[tlc] = self.ds_daymet['tmin'].values[day-1, i, j]
+                        elif var == 'vp':
+                            d_flt[tlc] = self.ds_daymet['vp'].values[day-1, i, j]
+                        tlc+=1
+                print("finished remapping gridmet", flush=True)
 
-            for index, row in self.gdf.iterrows():
-                try:
-                    weight_id_rows = self.unique_hru_ids.get_group(row[self.wghts_id])
-                    dayl[index] = np.nan_to_num(np_get_wval(dayl_flt, weight_id_rows, index+1))
-                    prcp[index] = np.nan_to_num(np_get_wval(prcp_flt, weight_id_rows, index+1))
-                    srad[index] = np.nan_to_num(np_get_wval(srad_flt, weight_id_rows, index+1))
-                    swe[index] = np.nan_to_num(np_get_wval(swe_flt, weight_id_rows, index+1))
-                    tmax[index] = np.nan_to_num(np_get_wval(tmax_flt, weight_id_rows, index+1))
-                    tmin[index] = np.nan_to_num(np_get_wval(tmin_flt, weight_id_rows, index+1))
-                    vp[index] = np.nan_to_num(np_get_wval(vp_flt, weight_id_rows, index+1))
-                except:
-                    dayl[index] = 0.0
-                    prcp[index] = 0.0
-                    srad[index] = 0.0
-                    swe[index] = 0.0
-                    tmax[index] = 0.0
-                    tmin[index] = 0.0
-                    vp[index] = 0.0
-                if index % 10000 == 0:
-                    print(index, row[self.wghts_id])
+                for index, row in self.gdf.iterrows():
+                    try:
+                        weight_id_rows = self.unique_hru_ids.get_group(row[self.wghts_id])
 
-            self.np_dayl[day, :] = dayl
-            self.np_prcp[day, :] = prcp
-            self.np_srad[day, :] = srad
-            self.np_swe[day, :] = swe
-            self.np_tmax[day, :] = tmax
-            self.np_tmin[day, :] = tmin
-            self.np_vp[day, :] = vp
+                        d_var[index] = np.nan_to_num(np_get_wval(d_flt, weight_id_rows, index+1))
+                        # prcp[index] = np.nan_to_num(np_get_wval(prcp_flt, weight_id_rows, index+1))
+                        # srad[index] = np.nan_to_num(np_get_wval(srad_flt, weight_id_rows, index+1))
+                        # swe[index] = np.nan_to_num(np_get_wval(swe_flt, weight_id_rows, index+1))
+                        # tmax[index] = np.nan_to_num(np_get_wval(tmax_flt, weight_id_rows, index+1))
+                        # tmin[index] = np.nan_to_num(np_get_wval(tmin_flt, weight_id_rows, index+1))
+                        # vp[index] = np.nan_to_num(np_get_wval(vp_flt, weight_id_rows, index+1))
+                    except:
+                        d_var[index] = 0.0
+                        # dayl[index] = 0.0
+                        # prcp[index] = 0.0
+                        # srad[index] = 0.0
+                        # swe[index] = 0.0
+                        # tmax[index] = 0.0
+                        # tmin[index] = 0.0
+                        # vp[index] = 0.0
+                    if index % 10000 == 0:
+                        print(index, row[self.wghts_id])
+
+                if var == 'dayl':
+                    self.np_dayl[day, :] = d_var
+                elif var == 'prcp':
+                    self.np_prcp[day, :] = d_var
+                elif var == 'srad':
+                    self.np_srad[day, :] = d_var
+                elif var == 'swe':
+                    self.np_swe[day, :] = d_var
+                elif var == 'tmax':
+                    self.np_tmax[day, :] = d_var
+                elif var == 'tmin':
+                    self.np_tmin[day, :] = d_var
+                elif var == 'vp':
+                    self.np_vp[day, :] = d_var
 
         # close xarray datasets
         self.ds_daymet.close()
