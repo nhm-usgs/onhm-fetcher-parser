@@ -619,7 +619,7 @@ class FpoNHM:
         lon[:] = tlon
         lat[:] = tlat
         hru[:] = self.gdf['hru_id_nat'].values
-        # print(hruid)
+        # print(hruid, flush=True)
         # tmax[0,:] = gdf['tmax'].values
         # tmin[0,:] = gdf['tmin'].values
         # prcp[0,:] = gdf['ppt'].values
@@ -632,12 +632,12 @@ class FpoNHM:
         ws[:, :] = self.np_ws[:, :]
 
         ncfile.close()
-        print("dataset is closed")
+        print("dataset is closed", flush=True)
 
     def finalize_dm(self):
-        print(os.getcwd())
+        print(os.getcwd(), flush=True)
         os.chdir(self.optpath)
-        print(os.getcwd())
+        print(os.getcwd(), flush=True)
         ncfile = netCDF4.Dataset(self.fileprefix + 'dm_climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc',
                                  mode='w', format='NETCDF4_CLASSIC')
 
@@ -651,7 +651,7 @@ class FpoNHM:
         hruid_dim = ncfile.createDimension('hruid', sp_dim)  # hru_id
         time_dim = ncfile.createDimension('time', self.numdays)  # unlimited axis (can be appended to).
         for dim in ncfile.dimensions.items():
-            print(dim)
+            print(dim, flush=True)
 
         # Create Variables
         time = ncfile.createVariable('time', 'i', ('time',))

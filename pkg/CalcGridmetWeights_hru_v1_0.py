@@ -15,17 +15,17 @@ import csv
 # var=daily_maximum_temperature&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=2014-01-01T00%3A00%3A00Z
 # &time_end=2014-01-01T00%3A00%3A00Z&timeStride=1&accept=netcdf
 # file saved as: agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc
-hruid = 'GFv11_id'
-uofi_file = r'../Data_v1_1/agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc'
+
+uofi_file = r'../Data/agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc'
 ds = xr.open_dataset(uofi_file)
 print(ds)
 #Read NHM hru shapefiles into geopandas dataframe
 print(os.getcwd())
 from pathlib import Path
-folder = Path(r'../Data_v1_1') # assumes working directory is onhm-fetcher-parser
+folder = Path(r'../Data') # assumes working directory is onhm-fetcher-parser
 print(folder)
 # shapefiles = folder.glob("*_0[1-2].shp")
-shapefiles = folder.glob("*v2e*.shp")
+shapefiles = folder.glob("*.shp")
 gdf = pd.concat([
     gpd.read_file(shp)
     for shp in shapefiles
@@ -93,50 +93,25 @@ ncfcells.head()
 
 spatial_index = ncfcells.sindex
 tcount = 0
-with open('tmp_Gridmet_weights_hru_v1_1e.csv', 'w', newline='') as f:
+with open('tmp_weights_hru_v1_0.csv', 'w', newline='') as f:
     writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for index, row in gdf.iterrows():
         count = 0
         if tcount == 0:
-            writer.writerow(['grid_ids', 'nhm_id', 'hru_id_nat', 'w'])
+            writer.writerow(['grid_ids', 'hru_id_nat', 'w'])
         possible_matches_index = list(spatial_index.intersection(row['geometry'].bounds))
-        if not(len(possible_matches_index) == 0):
-            possible_matches = ncfcells.iloc[possible_matches_index]
-            precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
-            if not(len(precise_matches) == 0):
-                res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
-                for nindex, row in res_intersection.iterrows():
-                    tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
-                    writer.writerow([np.int(precise_matches.index[count]), np.int(row['nhm_id']), np.int(row['hru_id_nat']), tmpfloat])
-                    count += 1
-                tcount += 1
-                if tcount%100 == 0:
-                    print(tcount, index)
-        else:
-            print('no intersection: ', index, np.int(row['nhm_id']))
-
-with open('tmp_Gridmet_weights_hru_v1_1e.csv', 'w', newline='') as f:
-    writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    for index, row in gdf.iterrows():
-        count = 0
-        hru_area = gdf.loc[gdf[hruid]==row[hruid]].geometry.area.sum()
-        if tcount == 0:
-            writer.writerow(['grid_ids', hruid, 'w'])
-        possible_matches_index = list(spatial_index2.intersection(row['geometry'].bounds))
-        if not (len(possible_matches_index) == 0):
-            possible_matches = ncfcells2.iloc[possible_matches_index]
-            precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
-            if not (len(precise_matches) == 0):
-                res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
-                for nindex, row in res_intersection.iterrows():
-                    # ttt = gdf.loc[[index], 'geometry'].area
-                    tmpfloat = np.float(res_intersection.area.iloc[nindex] / hru_area)
-                    writer.writerow([np.int(precise_matches.index[count]), np.int(row[hruid]), tmpfloat])
-                    count += 1
-                tcount += 1
-                if tcount % 100 == 0:
-                    print(tcount, index, flush=True)
-
-        else:
-            print('no intersection: ', index, np.int(row[hruid]), flush=True)
+        # if not(len(possible_matches_index) == 0):
+        possible_matches = ncfcells.iloc[possible_matches_index]
+        precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
+        # if not(len(precise_matches) == 0):
+        res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
+        for nindex, row in res_intersection.iterrows():
+            tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
+            writer.writerow([np.int(precise_matches.index[count]), np.int(row['hru_id_nat']), tmpfloat])
+            count += 1
+        tcount += 1
+        if tcount%100 == 0:
+            print(tcount, index)
+        # else:
+        #     print('no intersection: ', index, np.int(row['nhm_id']))
 # f.close()

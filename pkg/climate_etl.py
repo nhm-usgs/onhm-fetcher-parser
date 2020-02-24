@@ -105,42 +105,42 @@ def main():
     test = 0
 
 
-    print('starting Script')
+    print('starting Script', flush=True)
     #numdays = 2
     fp = FpoNHM()
-    print('instantiated')
+    print('instantiated', flush=True)
     #initialize(self, iptpath, optpath, weights_file, type=None, days=None, start_date=None, end_date=None)
     # ready = fp.initialize(idir, odir, wght_file, extract_type, numdays, startdate, enddate, file_prefix)
     ready = fp.initialize(idir, odir, wght_file, type=extract_type, days=numdays,
                           start_date=startdate, end_date=enddate,
                           fileprefix=file_prefix, climsource=climsource)
     if ready:
-        print('initalized\n')
-        print('running')
+        print('initalized\n', flush=True)
+        print('running', flush=True)
         if climsource == 'GridMetSS':
             fp.run_weights()
         elif climsource == 'DayMet':
             fp.run_weights_dm()
-        print('finished running')
+        print('finished running', flush=True)
         if climsource == 'GridMetSS':
             fp.finalize()
         elif climsource == 'DayMet':
             fp.finalize_dm()
-        print('finalized')
+        print('finalized', flush=True)
         sys.exit(0)
     else:
         if extract_type == 'days':
-            print('Gridmet not updated continue with numdays -1')
+            print('Gridmet not updated continue with numdays -1', flush=True)
             fp.setNumdays(numdays-1)
-            print('initalized\n')
-            print('running')
+            print('initalized\n', flush=True)
+            print('running', flush=True)
             fp.run_weights()
-            print('finished running')
+            print('finished running', flush=True)
             fp.finalize()
-            print('finalized')
+            print('finalized', flush=True)
             sys.exit(0)
         else:
-            print('error: extract did not return period specified, Gridmet no updated')
+            print('error: extract did not return period specified, Gridmet no updated', flush=True)
             sys.exit(1)
 
 if __name__ == "__main__":

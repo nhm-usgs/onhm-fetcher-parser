@@ -27,7 +27,8 @@ def distance(p1x, p1y, p2x, p2y):
 # file saved as: daymet_v3_tmax_2018_na.nc4.nc
 input_f = Path('../Data_v1_1')
 dm_file = Path('../Data_v1_1/daymet_for_wght.nc')
-hruid = 'GFv11_id'
+# hruid = 'GFv11_id' # for GFv11_v2b
+hruid = 'nhru_v11' # for GFv11_v2e
 if dm_file.exists():
     print('netcdf file exists opening data in xarray', flush=True)
     # ds = xr.open_dataset(dm_file)
@@ -77,7 +78,7 @@ print(os.getcwd(), flush=True)
 # folder = Path(r'../Data') # assumes working directory is onhm-fetcher-parser
 print(input_f, flush=True)
 # shapefiles = folder.glob("*_0[1].shp")
-shapefiles = input_f.glob("*.shp")
+shapefiles = input_f.glob("*v2e*.shp")
 print('reading hru shapefiles', flush=True)
 
 gdf = pd.concat([
@@ -174,7 +175,7 @@ spatial_index2 = ncfcells2.sindex
 print('Finished Spatial Index', flush=True)
 
 tcount = 0
-with open('tmp_daymet_weights_hru_v1_1b.csv', 'w', newline='') as f:
+with open('tmp_daymet_weights_hru_v1_1e.csv', 'w', newline='') as f:
     writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for index, row in gdf.iterrows():
         count = 0

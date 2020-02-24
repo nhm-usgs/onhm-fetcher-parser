@@ -15,15 +15,16 @@ import csv
 # var=daily_maximum_temperature&disableLLSubset=on&disableProjSubset=on&horizStride=1&time_start=2014-01-01T00%3A00%3A00Z
 # &time_end=2014-01-01T00%3A00%3A00Z&timeStride=1&accept=netcdf
 # file saved as: agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc
-hruid = 'GFv11_id'
+# hruid = 'GFv11_id' # for GFv11_v2b
+hruid = 'nhru_v11' # for GFv11_v2e
 uofi_file = r'../Data_v1_1/agg_met_tmmx_1979_CurrentYear_CONUS_2014_01_01.nc'
 ds = xr.open_dataset(uofi_file)
-print(ds)
+print(ds, flush=True)
 #Read NHM hru shapefiles into geopandas dataframe
-print(os.getcwd())
+print(os.getcwd(), flush=True)
 from pathlib import Path
 folder = Path(r'../Data_v1_1') # assumes working directory is onhm-fetcher-parser
-print(folder)
+print(folder, flush=True)
 # shapefiles = folder.glob("*_0[1-2].shp")
 shapefiles = folder.glob("*v2e*.shp")
 gdf = pd.concat([
@@ -36,7 +37,7 @@ gdf.reset_index(drop=True, inplace=True)
 gdf['tmax'] = 0.0
 
 # create some variables from the UofI netcdf file for use later
-print('\n The meta data is: \n', json.dumps(ds.attrs, indent=4))
+# print('\n The meta data is: \n', json.dumps(ds.attrs, indent=4), flush=True)
 lathandle = ds['lat']
 lonhandle = ds['lon']
 timehandle = ds['day']
@@ -50,19 +51,19 @@ latres = float(ds.attrs['geospatial_lon_resolution'])
 
 # Print some information on the data
 
-print('\n Data attributes, sizes, and coords \n')
+print('\n Data attributes, sizes, and coords \n', flush=True)
 # print('\n Data attributes are: \n', json.dumps(datahandle.attrs, indent=4))
-print('\n Data sizes are: \n', datahandle.sizes)
-print('\n Data coords are: \n', datahandle.coords)
+print('\n Data sizes are: \n', datahandle.sizes, flush=True)
+print('\n Data coords are: \n', datahandle.coords, flush=True)
 
 ts = datahandle.sizes
-print(type(ts))
-print(ts['day'])
+print(type(ts), flush=True)
+print(ts['day'], flush=True)
 dayshape = ts['day']
 Lonshape = ts['lon']
 Latshape = ts['lat']
 # dayshape,lonshape,latshape = datahandle.values.shape
-print(dayshape, Lonshape, Latshape)
+print(dayshape, Lonshape, Latshape, flush=True)
 
 temp = ds.daily_maximum_temperature
 temp1 = temp.isel(day=0)
@@ -97,34 +98,12 @@ with open('tmp_Gridmet_weights_hru_v1_1e.csv', 'w', newline='') as f:
     writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for index, row in gdf.iterrows():
         count = 0
-        if tcount == 0:
-            writer.writerow(['grid_ids', 'nhm_id', 'hru_id_nat', 'w'])
-        possible_matches_index = list(spatial_index.intersection(row['geometry'].bounds))
-        if not(len(possible_matches_index) == 0):
-            possible_matches = ncfcells.iloc[possible_matches_index]
-            precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
-            if not(len(precise_matches) == 0):
-                res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
-                for nindex, row in res_intersection.iterrows():
-                    tmpfloat = np.float(res_intersection.area.iloc[nindex]/gdf.loc[[index], 'geometry'].area)
-                    writer.writerow([np.int(precise_matches.index[count]), np.int(row['nhm_id']), np.int(row['hru_id_nat']), tmpfloat])
-                    count += 1
-                tcount += 1
-                if tcount%100 == 0:
-                    print(tcount, index)
-        else:
-            print('no intersection: ', index, np.int(row['nhm_id']))
-
-with open('tmp_Gridmet_weights_hru_v1_1e.csv', 'w', newline='') as f:
-    writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    for index, row in gdf.iterrows():
-        count = 0
         hru_area = gdf.loc[gdf[hruid]==row[hruid]].geometry.area.sum()
         if tcount == 0:
             writer.writerow(['grid_ids', hruid, 'w'])
-        possible_matches_index = list(spatial_index2.intersection(row['geometry'].bounds))
+        possible_matches_index = list(spatial_index.intersection(row['geometry'].bounds))
         if not (len(possible_matches_index) == 0):
-            possible_matches = ncfcells2.iloc[possible_matches_index]
+            possible_matches = ncfcells.iloc[possible_matches_index]
             precise_matches = possible_matches[possible_matches.intersects(row['geometry'])]
             if not (len(precise_matches) == 0):
                 res_intersection = gpd.overlay(gdf.loc[[index]], precise_matches, how='intersection')
