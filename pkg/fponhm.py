@@ -132,21 +132,21 @@ class FpoNHM:
         """
         self.iptpath = Path(iptpath)
         if self.iptpath.exists():
-            print('input path exits')
+            print('input path exits', flush=True)
         else:
-            print('input path does not exist')
+            print('input path does not exist', flush=True)
 
         self.optpath = Path(optpath)
         if self.optpath.exists():
-            print('output path exits')
+            print('output path exits', flush=True)
         else:
-            print('output path does not exist')
+            print('output path does not exist', flush=True)
 
         self.wghts_file = Path(weights_file)
         if self.wghts_file.exists():
-            print('weights file exits', self.wghts_file)
+            print('weights file exits', self.wghts_file, flush=True)
         else:
-            print('weights file not exist')
+            print('weights file not exist', flush=True)
         self.wghts_id = None
         self.type = type
         self.numdays = days
@@ -182,17 +182,17 @@ class FpoNHM:
         # print(os.getcwd())
         print(Path.cwd())
         if self.type == 'date':
-            print(f'start_date: {self.start_date} and end_date: {self.end_date}')
+            print(f'start_date: {self.start_date} and end_date: {self.end_date}', flush=True)
         else:
-            print(f'number of days: {self.numdays}')
+            print(f'number of days: {self.numdays}', flush=True)
         # glob.glob produces different results on Win and Linux. Adding sorted makes result consistent
         # filenames = sorted(glob.glob('*.shp'))
         # use pathlib glob
         filenames = sorted(self.iptpath.glob('*.shp'))
         self.gdf = pd.concat([gpd.read_file(f) for f in filenames], sort=True).pipe(gpd.GeoDataFrame)
         self.gdf.reset_index(drop=True, inplace=True)
-        print(filenames)
-        print(self.gdf.head())
+        print(filenames, flush=True)
+        print(self.gdf.head(), flush=True)
 
         self.num_hru = len(self.gdf.index)
         tmaxfile = None
@@ -239,15 +239,15 @@ class FpoNHM:
             wsfile.raise_for_status()
 
         except HTTPError as http_err:
-            print('HTTP error occured: {http_err}')
+            print('HTTP error occured: {http_err}', flush=True)
             if self.numdays == 1:
                 sys.exit("numdays == 1: Gridmet not updated")
             else:
                 sys.exit("GridMet not available or a bad request")
         except Exception as err:
-            print('Other error occured: {err}')
+            print('Other error occured: {err}', flush=True)
         else:
-            print('Gridmet data retrieved!')
+            print('Gridmet data retrieved!', flush=True)
 
         # write downloaded data to local netcdf files and open as xarray
         ncfile = (self.iptpath / (self.fileprefix + 'tmax_' + (datetime.now().strftime('%Y_%m_%d')) + '.nc'),
@@ -307,7 +307,7 @@ class FpoNHM:
             self.rhmin_h = self.dsrhmin[self.gmss_vars['rhmin']]
             self.ws_h = self.dsws[self.gmss_vars['ws']]
         else:
-            print('Error: climate source data not specified')
+            print('Error: climate source data not specified', flush=True)
 
         ts = self.tmax_h.sizes
         self.dayshape = ts['day']
@@ -315,11 +315,11 @@ class FpoNHM:
         self.latshape = ts['lat']
 
         # if self.type == 'days':
-        print(f'Gridmet returned days = {self.dayshape} and expected number of days {self.numdays}')
+        print(f'Gridmet returned days = {self.dayshape} and expected number of days {self.numdays}', flush=True)
         if self.dayshape == self.numdays:
             return True
         else:
-            print('returned and expected days not equal')
+            print('returned and expected days not equal', flush=True)
             return False
         # else:
         #     if self.dayshape == self.numdays:
@@ -341,7 +341,7 @@ class FpoNHM:
         #group by the weights_id for processing
         self.unique_hru_ids = wght_uofi.groupby(self.wghts_id)
 
-        print('finished reading weight file')
+        print('finished reading weight file', flush=True)
 
         # intialize numpy arrays to store climate vars
         self.np_tmax = np.zeros((self.numdays, self.num_hru))
@@ -352,7 +352,7 @@ class FpoNHM:
         self.np_ws = np.zeros((self.numdays, self.num_hru))
 
         for day in np.arange(self.numdays):
-            print(day)
+            print(day, flush=True)
             tmax = np.zeros(self.num_hru)
             tmin = np.zeros(self.num_hru)
             ppt = np.zeros(self.num_hru)
@@ -387,7 +387,7 @@ class FpoNHM:
                 ws[index] = np.nan_to_num(np_get_wval(tws_h_flt, weight_id_rows, index+1))
 
                 if index % 10000 == 0:
-                    print(index, row[self.wghts_id])
+                    print(index, row[self.wghts_id], flush=True)
 
             self.np_tmax[day, :] = tmax
             self.np_tmin[day, :] = tmin
@@ -410,7 +410,7 @@ class FpoNHM:
     def finalize(self):
         # print(os.getcwd())
         # os.chdir(self.optpath)
-        print(Path.cwd())
+        print(Path.cwd(), flush=True)
         ncfile = netCDF4.Dataset(self.optpath / (self.fileprefix + 'climate_' + str(datetime.now().strftime('%Y_%m_%d')) + '.nc'),
                                  mode='w', format='NETCDF4_CLASSIC')
 
@@ -424,7 +424,7 @@ class FpoNHM:
         hruid_dim = ncfile.createDimension('hruid', sp_dim)  # hru_id
         time_dim = ncfile.createDimension('time', self.numdays)  # unlimited axis (can be appended to).
         for dim in ncfile.dimensions.items():
-            print(dim)
+            print(dim, flush=True)
 
         # Create Variables
         time = ncfile.createVariable('time', 'i', ('time',))
@@ -501,7 +501,7 @@ class FpoNHM:
         ws[:, :] = self.np_ws[:, :]
 
         ncfile.close()
-        print("dataset is closed")
+        print("dataset is closed", flush=True)
 
     def setNumdays(self, num_d):
         self.numdays = num_d
