@@ -10,7 +10,8 @@ import netCDF4
 import os
 
 
-def finalize(odir, year, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin):
+def finalize(odir, year, gdf, numdays, start_date, wght_id,
+             mprcp, mtmax, mtmin, msrad, mswe, mvp, mdayl):
     print(os.getcwd())
     os.chdir(odir)
     print(os.getcwd())
@@ -52,9 +53,9 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin)
     lon.standard_name = 'hru_longitude'
 
     prcp = ncfile.createVariable('prcp', np.dtype(np.float32).char, ('time', 'hruid'))
-    prcp.long_name = 'Daily precipitation rate'
+    prcp.long_name = 'daily total precipitation'
     prcp.units = 'mm/day'
-    prcp.standard_name = 'lwe_precipitation_rate'
+    prcp.standard_name = 'daily_total_precipitation'
     prcp.fill_value = netCDF4.default_fillvals['f8']
 
     tmax = ncfile.createVariable('tmax', np.dtype(np.float32).char, ('time', 'hruid'))
@@ -69,6 +70,29 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin)
     tmin.standard_name = 'minimum_daily_air_temperature'
     tmin.fill_value = netCDF4.default_fillvals['f8']
 
+    srad = ncfile.createVariable('srad', np.dtype(np.float32).char, ('time', 'hruid'))
+    srad.long_name = 'daylight average incident shortwave radiation'
+    srad.units = 'W/m2'
+    srad.standard_name = 'daylight_average_incident_shortwave_radiation'
+    srad.fill_value = netCDF4.default_fillvals['f8']
+
+    swe = ncfile.createVariable('swe', np.dtype(np.float32).char, ('time', 'hruid'))
+    swe.long_name = 'snow water equivalent'
+    swe.units = 'kg/m2'
+    swe.standard_name = 'snow_water_equivalent'
+    swe.fill_value = netCDF4.default_fillvals['f8']
+
+    vp = ncfile.createVariable('vp', np.dtype(np.float32).char, ('time', 'hruid'))
+    vp.long_name = 'daily average vapor pressure'
+    vp.units = 'Pa'
+    vp.standard_name = 'daily_average_vapor_pressure'
+    vp.fill_value = netCDF4.default_fillvals['f8']
+
+    dayl = ncfile.createVariable('dayl', np.dtype(np.float32).char, ('time', 'hruid'))
+    dayl.long_name = 'daylength'
+    dayl.units = 's'
+    dayl.standard_name = 'daylength'
+    dayl.fill_value = netCDF4.default_fillvals['f8']
 
     # fill variables with available data
     def getxy(pt):
@@ -89,7 +113,10 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin)
     tmax[:, :] = mtmax[:, :]
     tmin[:, :] = mtmin[:, :]
     prcp[:, :] = mprcp[:, :]
-
+    srad[:, :] = msrad[:, :]
+    swe[:, :] = mswe[:, :]
+    vp[:, :] = mvp[:, :]
+    dayl[:, :] = mdayl[:, :]
 
     ncfile.close()
     print("dataset is closed", flush=True)
@@ -147,10 +174,18 @@ def get_dm_files(idir, year, xmin, xmax, ymin, ymax):
     vprcp = 'prcp'
     vtmax = 'tmax'
     vtmin = 'tmin'
+    vsrad = 'srad'
+    vswe = 'swe'
+    vvp = 'vp'
+    vdayl = 'dayl'
 
     fprcp = idir / f'daymet_v3_{vprcp}_{year}_na.nc4'
     ftmax = idir / f'daymet_v3_{vtmax}_{year}_na.nc4'
     ftmin = idir / f'daymet_v3_{vtmin}_{year}_na.nc4'
+    fsrad = idir / f'daymet_v3_{vsrad}_{year}_na.nc4'
+    fswe = idir / f'daymet_v3_{vswe}_{year}_na.nc4'
+    fvp = idir / f'daymet_v3_{vvp}_{year}_na.nc4'
+    fdayl = idir / f'daymet_v3_{vdayl}_{year}_na.nc4'
 
     return xr.open_dataset(fprcp).sel(
     y=slice(ymax*1000.0, ymin*1000.0),
@@ -159,6 +194,18 @@ def get_dm_files(idir, year, xmin, xmax, ymin, ymax):
     y=slice(ymax*1000.0, ymin*1000.0),
     x=slice(xmin*1000.0,xmax*1000.0)), \
            xr.open_dataset(ftmin).sel(
+    y=slice(ymax*1000.0, ymin*1000.0),
+    x=slice(xmin*1000.0,xmax*1000.0)), \
+           xr.open_dataset(fsrad).sel(
+    y=slice(ymax*1000.0, ymin*1000.0),
+    x=slice(xmin*1000.0,xmax*1000.0)), \
+           xr.open_dataset(fswe).sel(
+    y=slice(ymax*1000.0, ymin*1000.0),
+    x=slice(xmin*1000.0,xmax*1000.0)), \
+           xr.open_dataset(fvp).sel(
+    y=slice(ymax*1000.0, ymin*1000.0),
+    x=slice(xmin*1000.0,xmax*1000.0)), \
+           xr.open_dataset(fdayl).sel(
     y=slice(ymax*1000.0, ymin*1000.0),
     x=slice(xmin*1000.0,xmax*1000.0))
 
@@ -207,49 +254,78 @@ def main():
     date = dt.datetime(year=int(dmyear), month=1, day=1, hour=12)
     start_date = date
     xmin, xmax, ymin, ymax = get_dm_xy_bounds()
-    dprcp, dtmax, dtmin = get_dm_files(idir, dmyear, xmin, xmax, ymin, ymax)
+    dprcp, dtmax, dtmin, dsrad, dswe, dvp, ddayl = get_dm_files(idir, dmyear, xmin, xmax, ymin, ymax)
     gdf = get_gpd_from_shapefile(idir)
     numdays = dprcp.sizes['time']
+
     mprcp = np.zeros((numdays, len(gdf.index)))
     mtmax = np.zeros((numdays, len(gdf.index)))
     mtmin = np.zeros((numdays, len(gdf.index)))
+    msrad = np.zeros((numdays, len(gdf.index)))
+    mswe= np.zeros((numdays, len(gdf.index)))
+    mvp = np.zeros((numdays, len(gdf.index)))
+    mdayl = np.zeros((numdays, len(gdf.index)))
+
     lon = dprcp.lon.values
     lat = dprcp.lat.values
-    gdf['prcp'] = 0
-    gdf['tmax'] = 0
-    gdf['tmin'] = 0
+
+    gdf['prcp'] = 0.0
+    gdf['tmax'] = 0.0
+    gdf['tmin'] = 0.0
+    gdf['srad'] = 0.0
+    gdf['swe'] = 0.0
+    gdf['vp'] = 0.0
+    gdf['dayl'] = 0.0
+
     wght_dm = pd.read_csv(wght_file)
     wght_id = wght_dm.columns[1]
     unique_hru_ids = wght_dm.groupby(wght_id)
     print(f'Using weight id: {wght_id}')
+
     for i in range(numdays):
         print(date)
-        d_year = np.zeros((3, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
-        ndata = np.zeros((3, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
+        d_year = np.zeros((7, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
+        ndata = np.zeros((7, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
         ndata[0, :] = dprcp.prcp.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
         ndata[1, :] = dtmax.tmax.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
         ndata[2, :] = dtmin.tmin.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
-        td = np.zeros((3, len(gdf.index)))
+        ndata[3, :] = dsrad.srad.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
+        ndata[4, :] = dswe.swe.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
+        ndata[5, :] = dvp.vp.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
+        ndata[6, :] = ddayl.dayl.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
+
         for index, row in gdf.iterrows():
             try:
                 weight_id_rows = unique_hru_ids.get_group(row[wght_id])
                 d_year[0, index] = np.nan_to_num(np_get_wval(ndata[0, :], weight_id_rows, index + 1))
                 d_year[1, index] = np.nan_to_num(np_get_wval(ndata[1, :], weight_id_rows, index + 1))
                 d_year[2, index] = np.nan_to_num(np_get_wval(ndata[2, :], weight_id_rows, index + 1))
+                d_year[3, index] = np.nan_to_num(np_get_wval(ndata[3, :], weight_id_rows, index + 1))
+                d_year[4, index] = np.nan_to_num(np_get_wval(ndata[4, :], weight_id_rows, index + 1))
+                d_year[5, index] = np.nan_to_num(np_get_wval(ndata[5, :], weight_id_rows, index + 1))
+                d_year[6, index] = np.nan_to_num(np_get_wval(ndata[6, :], weight_id_rows, index + 1))
             except KeyError:
                 d_year[0, index] = netCDF4.default_fillvals['f8']
                 d_year[1, index] = netCDF4.default_fillvals['f8']
                 d_year[2, index] = netCDF4.default_fillvals['f8']
+                d_year[3, index] = netCDF4.default_fillvals['f8']
+                d_year[4, index] = netCDF4.default_fillvals['f8']
+                d_year[5, index] = netCDF4.default_fillvals['f8']
+                d_year[6, index] = netCDF4.default_fillvals['f8']
 
         date += dt.timedelta(days=1)
         # if i == 0:
         #     break
 
-        mprcp[i,:] = td[0,:]
-        mtmax[i,:] = td[1,:]
-        mtmin[i,:] = td[2,:]
+        mprcp[i, :] = d_year[0, :]
+        mtmax[i, :] = d_year[1, :]
+        mtmin[i, :] = d_year[2, :]
+        msrad[i, :] = d_year[3, :]
+        mswe[i, :] = d_year[4, :]
+        mvp[i, :] = d_year[5, :]
+        mdayl[i, :] = d_year[6, :]
 
-    finalize(odir, dmyear, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin)
+    finalize(odir, dmyear, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin, msrad, mswe, mvp, mdayl)
 
 if __name__ == "__main__":
     main()
