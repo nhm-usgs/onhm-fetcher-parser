@@ -226,7 +226,7 @@ class FpoNHM:
                 else:
                     sys.exit("GridMet not available or a bad request")
             except Exception as err:
-                print('Other error occured: {err}')
+                print('Other error occured:', {err})
             else:
                 print('Gridmet data retrieved!')
 
