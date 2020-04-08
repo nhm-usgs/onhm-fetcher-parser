@@ -12,9 +12,9 @@ import os
 
 def finalize(odir, year, gdf, numdays, start_date, wght_id,
              mprcp, mtmax, mtmin, msrad, mswe, mvp, mdayl):
-    print(os.getcwd())
+    print(os.getcwd(), flush=True)
     os.chdir(odir)
-    print(os.getcwd())
+    print(os.getcwd(), flush=True)
     ncfile = netCDF4.Dataset('dm_' + 'climate_' + str(year) + '.nc',
                              mode='w', format='NETCDF4_CLASSIC')
 
@@ -28,7 +28,7 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id,
     hruid_dim = ncfile.createDimension('hruid', sp_dim)  # hru_id
     time_dim = ncfile.createDimension('time', numdays)  # unlimited axis (can be appended to).
     for dim in ncfile.dimensions.items():
-        print(dim)
+        print(dim, flush=True)
 
     # Create Variables
     time = ncfile.createVariable('time', 'f4', ('time',))
@@ -238,19 +238,19 @@ def main():
     if args.inputdir is not None:
         idir = Path(args.inputdir)
         if not idir.exists():
-            print(f'Input directory: {idir} - does not exist - exiting')
+            print(f'Input directory: {idir} - does not exist - exiting', flush=True)
             return
     if args.outputdir is not None:
         odir = Path(args.outputdir)
         if not odir.exists():
-            print(f'Output directory: {odir} - does not exist - exiting')
+            print(f'Output directory: {odir} - does not exist - exiting', flush=True)
             return
     if args.year is not None:
         dmyear = args.year
     if args.weightsfile is not None:
         wght_file = Path(args.weightsfile)
         if not wght_file.exists():
-            print(f'Weights file: {wght_file} - does not exist -exiting')
+            print(f'Weights file: {wght_file} - does not exist -exiting', flush=True)
     date = dt.datetime(year=int(dmyear), month=1, day=1, hour=12)
     start_date = date
     xmin, xmax, ymin, ymax = get_dm_xy_bounds()
@@ -280,11 +280,11 @@ def main():
     wght_dm = pd.read_csv(wght_file)
     wght_id = wght_dm.columns[1]
     unique_hru_ids = wght_dm.groupby(wght_id)
-    print(f'Using weight id: {wght_id}')
+    print(f'Using weight id: {wght_id}', flush=True)
 
     for i in range(numdays):
-        print(date)
-        d_year = np.zeros((7, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
+        print(date, flush=True)
+        d_year = np.zeros((7, len(gdf.index)))
         ndata = np.zeros((7, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
         ndata[0, :] = dprcp.prcp.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
         ndata[1, :] = dtmax.tmax.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
