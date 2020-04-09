@@ -15,7 +15,7 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id,
     print(os.getcwd(), flush=True)
     os.chdir(odir)
     print(os.getcwd(), flush=True)
-    ncfile = netCDF4.Dataset('dm_' + 'climate_' + str(year) + '.nc',
+    ncfile = netCDF4.Dataset('gm_' + 'climate_' + str(year) + '.nc',
                              mode='w', format='NETCDF4_CLASSIC')
 
     # Global Attributes
@@ -23,7 +23,7 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id,
     ncfile.featureType = 'timeSeries'
     ncfile.history = ''
 
-    sp_dim = len(gdf)
+    sp_dim = len(gdf.index)
 
     hruid_dim = ncfile.createDimension('hruid', sp_dim)  # hru_id
     time_dim = ncfile.createDimension('time', numdays)  # unlimited axis (can be appended to).
@@ -228,7 +228,7 @@ def main():
 
     for day in np.arange(numdays):
         print(date, flush=True)
-        if day > 0: break
+        # if day > 0: break
         d_year = np.zeros((7, len(tindex)))
         ndata = np.zeros((7, (np.shape(lon)[0]) * (np.shape(lat)[0])))
         ndata[0, :] = dprcp.precipitation_amount.values[day,:,:].flatten()

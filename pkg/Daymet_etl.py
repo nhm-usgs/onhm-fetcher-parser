@@ -98,13 +98,13 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id,
     def getxy(pt):
         return pt.x, pt.y
 
-    centroidseries = gdf.geometry.centroid
-    tlon, tlat = [list(t) for t in zip(*map(getxy, centroidseries))]
+    cs = gdf.geometry.apply(lambda x: x.centroid)
+    # tlon, tlat = [list(t) for t in zip(*map(getxy, cs))]
     # print(lon, lat)
     time[:] = np.arange(0, numdays, dtype=np.float)
-    lon[:] = tlon
-    lat[:] = tlat
-    hru[:] = gdf[wght_id].values
+    lon[:] = cs.x.values
+    lat[:] = cs.y.values
+    hru[:] = np.asarray(gdf.index)
     # print(hruid, flush=True)
     # tmax[0,:] = gdf['tmax'].values
     # tmin[0,:] = gdf['tmin'].values
@@ -255,36 +255,41 @@ def main():
     start_date = date
     xmin, xmax, ymin, ymax = get_dm_xy_bounds()
     dprcp, dtmax, dtmin, dsrad, dswe, dvp, ddayl = get_dm_files(idir, dmyear, xmin, xmax, ymin, ymax)
-    gdf = get_gpd_from_shapefile(idir)
-    numdays = dprcp.sizes['time']
-
-    mprcp = np.zeros((numdays, len(gdf.index)))
-    mtmax = np.zeros((numdays, len(gdf.index)))
-    mtmin = np.zeros((numdays, len(gdf.index)))
-    msrad = np.zeros((numdays, len(gdf.index)))
-    mswe= np.zeros((numdays, len(gdf.index)))
-    mvp = np.zeros((numdays, len(gdf.index)))
-    mdayl = np.zeros((numdays, len(gdf.index)))
-
-    lon = dprcp.lon.values
-    lat = dprcp.lat.values
-
-    gdf['prcp'] = 0.0
-    gdf['tmax'] = 0.0
-    gdf['tmin'] = 0.0
-    gdf['srad'] = 0.0
-    gdf['swe'] = 0.0
-    gdf['vp'] = 0.0
-    gdf['dayl'] = 0.0
 
     wght_dm = pd.read_csv(wght_file)
     wght_id = wght_dm.columns[1]
     unique_hru_ids = wght_dm.groupby(wght_id)
     print(f'Using weight id: {wght_id}', flush=True)
 
-    for i in range(numdays):
+    gdf = get_gpd_from_shapefile(idir)
+    gdf1 = gdf.sort_values(wght_id).dissolve(by=wght_id)
+
+    numdays = dprcp.sizes['time']
+    numdays = 1
+    mprcp = np.zeros((numdays, len(gdf1.index)))
+    mtmax = np.zeros((numdays, len(gdf1.index)))
+    mtmin = np.zeros((numdays, len(gdf1.index)))
+    msrad = np.zeros((numdays, len(gdf1.index)))
+    mswe= np.zeros((numdays, len(gdf1.index)))
+    mvp = np.zeros((numdays, len(gdf1.index)))
+    mdayl = np.zeros((numdays, len(gdf1.index)))
+
+    lon = dprcp.lon.values
+    lat = dprcp.lat.values
+
+    def getaverage(data, wghts):
+        try:
+            v_ave = np.average(data, weights=wghts)
+        except ZeroDivisionError:
+            v_ave = netCDF4.default_fillvals['f8']
+        return v_ave
+
+    tindex = np.asarray(gdf1.index)
+
+    for day in np.arange(numdays):
         print(date, flush=True)
-        d_year = np.zeros((7, len(gdf.index)))
+        if day > 0: break
+        d_year = np.zeros((7, len(tindex)))
         ndata = np.zeros((7, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
         ndata[0, :] = dprcp.prcp.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
         ndata[1, :] = dtmax.tmax.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
@@ -294,36 +299,39 @@ def main():
         ndata[5, :] = dvp.vp.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
         ndata[6, :] = ddayl.dayl.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
 
-        for index, row in gdf.iterrows():
+        # for index, row in gdf.iterrows():
+        for i in np.arange(len(tindex)):
             try:
-                weight_id_rows = unique_hru_ids.get_group(row[wght_id])
-                d_year[0, index] = np.nan_to_num(np_get_wval(ndata[0, :], weight_id_rows, index + 1))
-                d_year[1, index] = np.nan_to_num(np_get_wval(ndata[1, :], weight_id_rows, index + 1))
-                d_year[2, index] = np.nan_to_num(np_get_wval(ndata[2, :], weight_id_rows, index + 1))
-                d_year[3, index] = np.nan_to_num(np_get_wval(ndata[3, :], weight_id_rows, index + 1))
-                d_year[4, index] = np.nan_to_num(np_get_wval(ndata[4, :], weight_id_rows, index + 1))
-                d_year[5, index] = np.nan_to_num(np_get_wval(ndata[5, :], weight_id_rows, index + 1))
-                d_year[6, index] = np.nan_to_num(np_get_wval(ndata[6, :], weight_id_rows, index + 1))
+                weight_id_rows = unique_hru_ids.get_group(tindex[i])
+                tw = weight_id_rows.w.values
+                tgid = weight_id_rows.grid_ids.values
+                d_year[0, i] = getaverage(ndata[0, tgid], tw)
+                d_year[1, i] = getaverage(ndata[0, tgid], tw)
+                d_year[2, i] = getaverage(ndata[0, tgid], tw)
+                d_year[3, i] = getaverage(ndata[0, tgid], tw)
+                d_year[4, i] = getaverage(ndata[0, tgid], tw)
+                d_year[5, i] = getaverage(ndata[0, tgid], tw)
+                d_year[6, i] = getaverage(ndata[0, tgid], tw)
             except KeyError:
-                d_year[0, index] = netCDF4.default_fillvals['f8']
-                d_year[1, index] = netCDF4.default_fillvals['f8']
-                d_year[2, index] = netCDF4.default_fillvals['f8']
-                d_year[3, index] = netCDF4.default_fillvals['f8']
-                d_year[4, index] = netCDF4.default_fillvals['f8']
-                d_year[5, index] = netCDF4.default_fillvals['f8']
-                d_year[6, index] = netCDF4.default_fillvals['f8']
+                d_year[0, i] = netCDF4.default_fillvals['f8']
+                d_year[1, i] = netCDF4.default_fillvals['f8']
+                d_year[2, i] = netCDF4.default_fillvals['f8']
+                d_year[3, i] = netCDF4.default_fillvals['f8']
+                d_year[4, i] = netCDF4.default_fillvals['f8']
+                d_year[5, i] = netCDF4.default_fillvals['f8']
+                d_year[6, i] = netCDF4.default_fillvals['f8']
 
         date += dt.timedelta(days=1)
         # if i == 0:
         #     break
 
-        mprcp[i, :] = d_year[0, :]
-        mtmax[i, :] = d_year[1, :]
-        mtmin[i, :] = d_year[2, :]
-        msrad[i, :] = d_year[3, :]
-        mswe[i, :] = d_year[4, :]
-        mvp[i, :] = d_year[5, :]
-        mdayl[i, :] = d_year[6, :]
+        mprcp[i, :] = np.nan_to_num(d_year[0, :], nan=netCDF4.default_fillvals['f8'])
+        mtmax[i, :] = np.nan_to_num(d_year[1, :], nan=netCDF4.default_fillvals['f8'])
+        mtmin[i, :] = np.nan_to_num(d_year[2, :], nan=netCDF4.default_fillvals['f8'])
+        msrad[i, :] = np.nan_to_num(d_year[3, :], nan=netCDF4.default_fillvals['f8'])
+        mswe[i, :] = np.nan_to_num(d_year[4, :], nan=netCDF4.default_fillvals['f8'])
+        mvp[i, :] = np.nan_to_num(d_year[5, :], nan=netCDF4.default_fillvals['f8'])
+        mdayl[i, :] = np.nan_to_num(d_year[6, :], nan=netCDF4.default_fillvals['f8'])
 
     finalize(odir, dmyear, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin, msrad, mswe, mvp, mdayl)
 
