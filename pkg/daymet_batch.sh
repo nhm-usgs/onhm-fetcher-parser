@@ -1,6 +1,6 @@
 #! /bin/sh
-#SBATCH -J daymet_etl_1980
-#SBATCH -t 1-08:00
+#SBATCH -J daymet_etl
+#SBATCH -t 24:00:00
 #SBATCH -o %j-dm_out.out
 #SBATCH -p workq
 #SBATCH -A wbeep

@@ -114,6 +114,34 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id,
     ncfile.close()
     print("dataset is closed", flush=True)
 
+def np_get_wval(ndata, tgid, wghts, hru_id):
+    """
+    Returns weighted average of ndata with weights = grp
+    1) mdata = the subset of values associated with the gridmet id's that are mapped to hru_id.
+    2) Some of these values may have nans if the gridmet id is outside of conus so only return values
+    that are inside of conus
+    3) this means that hru's that are entirely outside of conus will return nans which will ultimately,
+    outside of this function get assigned zero's.
+    4) the value is assigned the weighted average
+    :param ndata: float array of data values
+    :param wghts: float array of weights
+    :param hru_id hru id number
+    :return: numpy weighted averaged - masked to deal with nans associated with
+            ndata that is outside of the conus.
+    """
+    mdata = np.ma.masked_array(ndata, np.isnan(ndata))
+
+    # mdata = np.ma.masked_where(ndata[wghts['grid_ids'].values.astype(int)] <= 0.0,
+    #                            (ndata[wghts['grid_ids'].values.astype(int)]))
+    tmp = np.ma.average(mdata, weights=wghts)
+ 
+    if tmp is masked:
+        # print(f'returning masked value: {hru_id}', ndata)
+        return netCDF4.default_fillvals['f8']
+
+    else:
+        return tmp
+
 def get_gpd_from_shapefile(idir):
     shapefiles = idir.glob('*.shp')
     gdf = pd.concat([
@@ -217,7 +245,7 @@ def main():
     lon = dprcp.lon.values
     lat = dprcp.lat.values
 
-    def getaverage(data, wghts):
+    def getaverage(data, wghts, tindex):
         try:
             v_ave = np.average(data, weights=wghts)
         except ZeroDivisionError:
@@ -231,12 +259,13 @@ def main():
         # if day > 0: break
         d_year = np.zeros((7, len(tindex)))
         ndata = np.zeros((7, (np.shape(lon)[0]) * (np.shape(lat)[0])))
-        ndata[0, :] = dprcp.precipitation_amount.values[day,:,:].flatten()
-        ndata[1, :] = dtmax.daily_maximum_temperature.values[day,:,:].flatten()
-        ndata[2, :] = dtmin.daily_minimum_temperature.values[day,:,:].flatten()
-        ndata[3, :] = drhmax.daily_maximum_relative_humidity.values[day,:,:].flatten()
-        ndata[4, :] = drhmin.daily_minimum_relative_humidity.values[day,:,:].flatten()
-        ndata[5, :] = dws.daily_mean_wind_speed.values[day,:,:].flatten()
+       
+        ndata[0, :] = dprcp.precipitation_amount.sel(time=date).values[:,:].flatten()
+        ndata[1, :] = dtmax.daily_maximum_temperature.sel(time=date).values[:,:].flatten()
+        ndata[2, :] = dtmin.daily_minimum_temperature.sel(time=date).values[:,:].flatten()
+        ndata[3, :] = drhmax.daily_maximum_relative_humidity.sel(time=date).values[:,:].flatten()
+        ndata[4, :] = drhmin.daily_minimum_relative_humidity.sel(time=date).values[:,:].flatten()
+        ndata[5, :] = dws.daily_mean_wind_speed.sel(time=date).values[:,:].flatten()
 
         # for index, row in gdf.iterrows():
         for i in np.arange(len(tindex)):
@@ -244,13 +273,22 @@ def main():
                 weight_id_rows = unique_hru_ids.get_group(tindex[i])
                 tw = weight_id_rows.w.values
                 tgid = weight_id_rows.grid_ids.values
-                d_year[0, i] = getaverage(ndata[0, tgid], tw)
-                d_year[1, i] = getaverage(ndata[1, tgid]-273.5, tw)
-                d_year[2, i] = getaverage(ndata[2, tgid]-273.5, tw)
-                d_year[3, i] = getaverage(ndata[3, tgid], tw)
-                d_year[4, i] = getaverage(ndata[4, tgid], tw)
-                d_year[5, i] = getaverage(ndata[5, tgid], tw)
+                if np.isnan(getaverage(ndata[0, tgid], tw, tindex[i])):
+                    d_year[0, i] = np_get_wval(ndata[0, tgid], tgid, tw, tindex[i])
+                    d_year[1, i] = np_get_wval(ndata[1, tgid]-273.5, tgid, tw, tindex[i])
+                    d_year[2, i] = np_get_wval(ndata[2, tgid]-273.5, tgid, tw, tindex[i])
+                    d_year[3, i] = np_get_wval(ndata[3, tgid], tgid, tw, tindex[i])
+                    d_year[4, i] = np_get_wval(ndata[4, tgid], tgid, tw, tindex[i])
+                    d_year[5, i] = np_get_wval(ndata[5, tgid], tgid, tw, tindex[i])
+                else:
+                    d_year[0, i] = getaverage(ndata[0, tgid], tw, tindex[i])
+                    d_year[1, i] = getaverage(ndata[1, tgid]-273.5, tw, tindex[i])
+                    d_year[2, i] = getaverage(ndata[2, tgid]-273.5, tw, tindex[i])
+                    d_year[3, i] = getaverage(ndata[3, tgid], tw, tindex[i])
+                    d_year[4, i] = getaverage(ndata[4, tgid], tw, tindex[i])
+                    d_year[5, i] = getaverage(ndata[5, tgid], tw, tindex[i])
             except KeyError:
+                # print(f'KeyError, {tindex[i]}')
                 d_year[0, i] = netCDF4.default_fillvals['f8']
                 d_year[1, i] = netCDF4.default_fillvals['f8']
                 d_year[2, i] = netCDF4.default_fillvals['f8']

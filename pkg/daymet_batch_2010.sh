@@ -1,5 +1,5 @@
 #! /bin/sh
-#SBATCH -J daymet_etl
+#SBATCH -J daymet_etl_2010
 #SBATCH -t 24:00:00
 #SBATCH -o %j-dm_out.out
 #SBATCH -p workq

@@ -8,7 +8,7 @@ import numpy as np
 from numpy.ma import masked
 import netCDF4
 import os
-
+import sys
 
 def finalize(odir, year, gdf, numdays, start_date, wght_id,
              mprcp, mtmax, mtmin, msrad, mswe, mvp, mdayl):
@@ -129,7 +129,7 @@ def get_dm_xy_bounds():
     ymax = 1687.0
     return xmin, xmax, ymin, ymax
 
-def np_get_wval(ndata, wghts, hru_id):
+def np_get_wval(ndata, tgid, wghts, hru_id):
     """
     Returns weighted average of ndata with weights = grp
     1) mdata = the subset of values associated with the gridmet id's that are mapped to hru_id.
@@ -144,18 +144,18 @@ def np_get_wval(ndata, wghts, hru_id):
     :return: numpy weighted averaged - masked to deal with nans associated with
             ndata that is outside of the conus.
     """
-    mdata = np.ma.masked_array(ndata[wghts['grid_ids'].values.astype(int)],
-                               np.isnan(ndata[wghts['grid_ids'].values.astype(int)]))
+    mdata = np.ma.masked_array(ndata, np.isnan(ndata))
 
     # mdata = np.ma.masked_where(ndata[wghts['grid_ids'].values.astype(int)] <= 0.0,
     #                            (ndata[wghts['grid_ids'].values.astype(int)]))
-    tmp = np.ma.average(mdata, weights=wghts['w'])
-    if tmp is masked:
-        # print('returning masked value', hru_id, mdata, wghts['w'])
-        return np.nan
+    tmp = np.ma.average(mdata, weights=wghts)
+    return tmp
+    # if tmp is masked:
+    #     # print(f'returning masked value: {hru_id}', ndata)
+    #     return netCDF4.default_fillvals['f8']
 
-    else:
-        return tmp
+    # else:
+    #     return tmp
 
 def get_gpd_from_shapefile(idir):
     shapefiles = idir.glob('*.shp')
@@ -265,7 +265,7 @@ def main():
     gdf1 = gdf.sort_values(wght_id).dissolve(by=wght_id)
 
     numdays = dprcp.sizes['time']
-    numdays = 1
+    # numdays = 1
     mprcp = np.zeros((numdays, len(gdf1.index)))
     mtmax = np.zeros((numdays, len(gdf1.index)))
     mtmin = np.zeros((numdays, len(gdf1.index)))
@@ -277,10 +277,11 @@ def main():
     lon = dprcp.lon.values
     lat = dprcp.lat.values
 
-    def getaverage(data, wghts):
+    def getaverage(data, wghts, tindex):
         try:
             v_ave = np.average(data, weights=wghts)
         except ZeroDivisionError:
+            # print(f'ZeroDivisionError index: {tindex}')
             v_ave = netCDF4.default_fillvals['f8']
         return v_ave
 
@@ -288,7 +289,7 @@ def main():
 
     for day in np.arange(numdays):
         print(date, flush=True)
-        if day > 0: break
+        # if day > 0: break
         d_year = np.zeros((7, len(tindex)))
         ndata = np.zeros((7, (np.shape(lon)[1] - 2) * (np.shape(lon)[0] - 2)))
         ndata[0, :] = dprcp.prcp.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
@@ -300,19 +301,38 @@ def main():
         ndata[6, :] = ddayl.dayl.sel(time=date).values[1:np.shape(lon)[0] - 1, 1:np.shape(lon)[1] - 1].flatten()
 
         # for index, row in gdf.iterrows():
+        fill = np.zeros(7)
         for i in np.arange(len(tindex)):
             try:
                 weight_id_rows = unique_hru_ids.get_group(tindex[i])
                 tw = weight_id_rows.w.values
                 tgid = weight_id_rows.grid_ids.values
-                d_year[0, i] = getaverage(ndata[0, tgid], tw)
-                d_year[1, i] = getaverage(ndata[0, tgid], tw)
-                d_year[2, i] = getaverage(ndata[0, tgid], tw)
-                d_year[3, i] = getaverage(ndata[0, tgid], tw)
-                d_year[4, i] = getaverage(ndata[0, tgid], tw)
-                d_year[5, i] = getaverage(ndata[0, tgid], tw)
-                d_year[6, i] = getaverage(ndata[0, tgid], tw)
+                
+                if np.isnan(getaverage(ndata[0, tgid], tw, tindex[i])):
+                    # np.set_printoptions(threshold=sys.maxsize)
+                    # print(len(tw), tw)
+                    # print(len(tgid), tgid)
+                    # print(len(ndata[1,tgid]), ndata[1, tgid])
+                    # # print(getaverage(ndata[1, tgid], tw))
+
+                    d_year[0, i] = np_get_wval(ndata[0, tgid], tgid, tw, tindex[i])
+                    d_year[1, i] = np_get_wval(ndata[1, tgid], tgid, tw, tindex[i])
+                    d_year[2, i] = np_get_wval(ndata[2, tgid], tgid, tw, tindex[i])
+                    d_year[3, i] = np_get_wval(ndata[3, tgid], tgid, tw, tindex[i])
+                    d_year[4, i] = np_get_wval(ndata[4, tgid], tgid, tw, tindex[i])
+                    d_year[5, i] = np_get_wval(ndata[5, tgid], tgid, tw, tindex[i])
+                    d_year[6, i] = np_get_wval(ndata[6, tgid], tgid, tw, tindex[i])
+                else:
+                    d_year[0, i] = getaverage(ndata[0, tgid], tw, tindex[i])
+                    d_year[1, i] = getaverage(ndata[1, tgid], tw, tindex[i])
+                    d_year[2, i] = getaverage(ndata[2, tgid], tw, tindex[i])
+                    d_year[3, i] = getaverage(ndata[3, tgid], tw, tindex[i])
+                    d_year[4, i] = getaverage(ndata[4, tgid], tw, tindex[i])
+                    d_year[5, i] = getaverage(ndata[5, tgid], tw, tindex[i])
+                    d_year[6, i] = getaverage(ndata[6, tgid], tw, tindex[i])
+
             except KeyError:
+                print(f'KeyError, {tindex[i]}')
                 d_year[0, i] = netCDF4.default_fillvals['f8']
                 d_year[1, i] = netCDF4.default_fillvals['f8']
                 d_year[2, i] = netCDF4.default_fillvals['f8']
@@ -322,18 +342,16 @@ def main():
                 d_year[6, i] = netCDF4.default_fillvals['f8']
 
         date += dt.timedelta(days=1)
-        # if i == 0:
-        #     break
+        
+        mprcp[day, :] = d_year[0, :]
+        mtmax[day, :] = d_year[1, :]
+        mtmin[day, :] = d_year[2, :]
+        msrad[day, :] = d_year[3, :]
+        mswe[day, :] = d_year[4, :]
+        mvp[day, :] = d_year[5, :]
+        mdayl[day, :] = d_year[6, :]
 
-        mprcp[i, :] = np.nan_to_num(d_year[0, :], nan=netCDF4.default_fillvals['f8'])
-        mtmax[i, :] = np.nan_to_num(d_year[1, :], nan=netCDF4.default_fillvals['f8'])
-        mtmin[i, :] = np.nan_to_num(d_year[2, :], nan=netCDF4.default_fillvals['f8'])
-        msrad[i, :] = np.nan_to_num(d_year[3, :], nan=netCDF4.default_fillvals['f8'])
-        mswe[i, :] = np.nan_to_num(d_year[4, :], nan=netCDF4.default_fillvals['f8'])
-        mvp[i, :] = np.nan_to_num(d_year[5, :], nan=netCDF4.default_fillvals['f8'])
-        mdayl[i, :] = np.nan_to_num(d_year[6, :], nan=netCDF4.default_fillvals['f8'])
-
-    finalize(odir, dmyear, gdf, numdays, start_date, wght_id, mprcp, mtmax, mtmin, msrad, mswe, mvp, mdayl)
+    finalize(odir, dmyear, gdf1, numdays, start_date, wght_id, mprcp, mtmax, mtmin, msrad, mswe, mvp, mdayl)
 
 if __name__ == "__main__":
     main()
