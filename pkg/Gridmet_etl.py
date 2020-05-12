@@ -71,22 +71,23 @@ def finalize(odir, year, gdf, numdays, start_date, wght_id,
     tmin.fill_value = netCDF4.default_fillvals['f8']
 
     rhmax = ncfile.createVariable('rhmax', np.dtype(np.float32).char, ('time', 'hruid'))
-    rhmax.long_name = 'daylight average incident shortwave radiation'
-    rhmax.units = 'W/m2'
-    rhmax.standard_name = 'daylight_average_incident_shortwave_radiation'
-    rhmax.fill_value = netCDF4.default_fillvals['f8']
+    rhmax.long_name = 'Daily Maximum Relative Humidity'
+    rhmax.units = 'percent'
+    rhmax.standard_name = 'rhmax'
+    rhmax.fill_value = default_fillvals['f8']
 
     rhmin = ncfile.createVariable('rhmin', np.dtype(np.float32).char, ('time', 'hruid'))
-    rhmin.long_name = 'snow water equivalent'
-    rhmin.units = 'kg/m2'
-    rhmin.standard_name = 'snow_water_equivalent'
-    rhmin.fill_value = netCDF4.default_fillvals['f8']
+    rhmin.long_name = 'Daily Maximum Relative Humidity'
+    rhmin.units = 'percent'
+    rhmin.standard_name = 'rhmin'
+    rhmin.fill_value = default_fillvals['f8']
 
     ws = ncfile.createVariable('ws', np.dtype(np.float32).char, ('time', 'hruid'))
-    ws.long_name = 'daily average vapor pressure'
-    ws.units = 'Pa'
-    ws.standard_name = 'daily_average_vapor_pressure'
-    ws.fill_value = netCDF4.default_fillvals['f8']
+    ws.long_name = 'Daily Mean Wind Speed'
+    ws.units = 'm/s'
+    ws.standard_name = 'ws'
+    ws.fill_value = default_fillvals['f8']
+
 
     # fill variables with available data
     def getxy(pt):
@@ -221,7 +222,8 @@ def main():
         wght_file = Path(args.weightsfile)
         if not wght_file.exists():
             print(f'Weights file: {wght_file} - does not exist -exiting', flush=True)
-    date = dt.datetime(year=int(dmyear), month=1, day=1, hour=0)
+    date = dt.datetime(year=int(dmyear), month=1, day=1)
+    date2 = dt.datetime(year=1900,month=1,day=1)
     start_date = date
     dprcp, dtmax, dtmin, drhmax, drhmin, dws = get_dm_files(idir, dmyear)
 
@@ -234,7 +236,7 @@ def main():
     gdf1 = gdf.sort_values(wght_id).dissolve(by=wght_id)
 
     numdays = dprcp.sizes['day']
-    # numdays = 1
+    # numdays = 3
     mprcp = np.zeros((numdays, len(gdf1.index)))
     mtmax = np.zeros((numdays, len(gdf1.index)))
     mtmin = np.zeros((numdays, len(gdf1.index)))
@@ -253,20 +255,20 @@ def main():
         return v_ave
 
     tindex = np.asarray(gdf1.index)
+    day1 = dprcp.day.values[0]
 
     for day in np.arange(numdays):
         print(date, flush=True)
-        # if day > 0: break
+        # if day > 2: break
         d_year = np.zeros((7, len(tindex)))
         ndata = np.zeros((7, (np.shape(lon)[0]) * (np.shape(lat)[0])))
-       
-        ndata[0, :] = dprcp.precipitation_amount.sel(time=date).values[:,:].flatten()
-        ndata[1, :] = dtmax.daily_maximum_temperature.sel(time=date).values[:,:].flatten()
-        ndata[2, :] = dtmin.daily_minimum_temperature.sel(time=date).values[:,:].flatten()
-        ndata[3, :] = drhmax.daily_maximum_relative_humidity.sel(time=date).values[:,:].flatten()
-        ndata[4, :] = drhmin.daily_minimum_relative_humidity.sel(time=date).values[:,:].flatten()
-        ndata[5, :] = dws.daily_mean_wind_speed.sel(time=date).values[:,:].flatten()
-
+        tday = date - date2
+        ndata[0, :] = dprcp.precipitation_amount.values[day,:,:].flatten()
+        ndata[1, :] = dtmax.daily_maximum_temperature.values[day,:,:].flatten()
+        ndata[2, :] = dtmin.daily_minimum_temperature.values[day,:,:].flatten()
+        ndata[3, :] = drhmax.daily_maximum_relative_humidity.values[day,:,:].flatten()
+        ndata[4, :] = drhmin.daily_minimum_relative_humidity.values[day,:,:].flatten()
+        ndata[5, :] = dws.daily_mean_wind_speed.values[day,:,:].flatten()
         # for index, row in gdf.iterrows():
         for i in np.arange(len(tindex)):
             try:
@@ -275,8 +277,8 @@ def main():
                 tgid = weight_id_rows.grid_ids.values
                 if np.isnan(getaverage(ndata[0, tgid], tw, tindex[i])):
                     d_year[0, i] = np_get_wval(ndata[0, tgid], tgid, tw, tindex[i])
-                    d_year[1, i] = np_get_wval(ndata[1, tgid]-273.5, tgid, tw, tindex[i])
-                    d_year[2, i] = np_get_wval(ndata[2, tgid]-273.5, tgid, tw, tindex[i])
+                    d_year[1, i] = np_get_wval(ndata[1, tgid]-273.15, tgid, tw, tindex[i])
+                    d_year[2, i] = np_get_wval(ndata[2, tgid]-273.15, tgid, tw, tindex[i])
                     d_year[3, i] = np_get_wval(ndata[3, tgid], tgid, tw, tindex[i])
                     d_year[4, i] = np_get_wval(ndata[4, tgid], tgid, tw, tindex[i])
                     d_year[5, i] = np_get_wval(ndata[5, tgid], tgid, tw, tindex[i])
@@ -297,6 +299,7 @@ def main():
                 d_year[5, i] = netCDF4.default_fillvals['f8']
 
         date += dt.timedelta(days=1)
+        day1+=1
         # if i == 0:
         #     break
 
