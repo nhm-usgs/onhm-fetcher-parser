@@ -412,8 +412,8 @@ class FpoNHM:
                 try:
                     # weight_id_rows = wght_df_40.loc[wght_df_40[self.wghts_id] == row[self.wghts_id]]
                     weight_id_rows = self.unique_hru_ids.get_group(row[self.wghts_id])
-                    tmax[index] = np.nan_to_num(np_get_wval(tmax_h_flt, weight_id_rows, row[self.wghts_id]) - 273.5)
-                    tmin[index] = np.nan_to_num(np_get_wval(tmin_h_flt, weight_id_rows, row[self.wghts_id]) - 273.5)
+                    tmax[index] = np.nan_to_num(np_get_wval(tmax_h_flt, weight_id_rows, row[self.wghts_id]) - 273.15)
+                    tmin[index] = np.nan_to_num(np_get_wval(tmin_h_flt, weight_id_rows, row[self.wghts_id]) - 273.15)
                     ppt[index] = np.nan_to_num(np_get_wval(tppt_h_flt, weight_id_rows, row[self.wghts_id]))
                     rhmax[index] = np.nan_to_num(np_get_wval(trhmax_h_flt, weight_id_rows, row[self.wghts_id]))
                     rhmin[index] = np.nan_to_num(np_get_wval(trhmin_h_flt, weight_id_rows, row[self.wghts_id]))
