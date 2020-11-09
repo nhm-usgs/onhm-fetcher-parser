@@ -28,8 +28,11 @@ data_packets = ['agg_met_tmmn_1979_CurrentYear_CONUS.nc', 'agg_met_pr_1979_Curre
                 'agg_met_vs_1979_CurrentYear_CONUS.nc']
 urlsuffix = 'dataset.xml'
 
-now = datetime.today().date()
-yesterday = now - timedelta(days=1)
+#print(datetime.tzinfo, datetime.utcoffset(datetime.now()))
+nowutc = datetime.utcnow()
+now = nowutc - timedelta(hours=7)
+yesterday = (now - timedelta(days=1)).date()
+print('nowutc: ', nowutc, ' now: ', now, ' yesterday: ', yesterday)
 
 for data in data_packets:
     masterURL = serverURL + '/' + data + '/' + urlsuffix
