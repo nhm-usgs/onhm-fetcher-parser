@@ -13,3 +13,5 @@ DeschutesData/
 pkg/__pycache__
 notebooks/.ipynb_checkpoints/
 .idea
+.vscode/
+Data_v1_0/
